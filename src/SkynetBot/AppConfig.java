@@ -10,7 +10,7 @@
  * You should have received a copy of the GNU General Public License along with Timmy. If not, see
  * <http://www.gnu.org/licenses/>.
  */
-package skynetbot;
+package SkynetBot;
 
 import java.util.Collection;
 import java.util.logging.Level;

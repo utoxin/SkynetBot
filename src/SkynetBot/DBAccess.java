@@ -1,4 +1,16 @@
-package skynetbot;
+/**
+ * This file is part of Skynet, the ChatNano Channel Management Bot.
+ *
+ * Skynet is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+ *
+ * Skynet is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with Skynet. If not, see
+ * <http://www.gnu.org/licenses/>.
+ */
+package SkynetBot;
 
 import com.mysql.jdbc.Driver;
 import java.sql.Connection;
@@ -15,11 +27,6 @@ import java.util.logging.Logger;
 import org.pircbotx.Channel;
 import snaq.db.ConnectionPool;
 
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-
 /**
  *
  * @author Matthew Walker
@@ -30,7 +37,7 @@ public class DBAccess {
 	protected ConnectionPool pool;
 	protected Set<String> admin_list = new HashSet<String>(16);
 	protected HashMap<String, ChannelInfo> channel_data = new HashMap<String, ChannelInfo>(62);
-	
+
 	static {
 		instance = new DBAccess();
 	}
@@ -89,6 +96,7 @@ public class DBAccess {
 		Connection con;
 		ChannelInfo ci;
 		Channel channel;
+		ChannelInfo.ControlMode control_mode;
 
 		this.channel_data.clear();
 
@@ -100,7 +108,9 @@ public class DBAccess {
 
 			while (rs.next()) {
 				channel = SkynetBot.bot.getChannel(rs.getString("channel"));
-				ci = new ChannelInfo(channel);
+				control_mode = ChannelInfo.ControlMode.values()[rs.getInt("control_mode")];
+				
+				ci = new ChannelInfo(channel, control_mode);
 
 				this.channel_data.put(channel.getName(), ci);
 			}
@@ -138,5 +148,23 @@ public class DBAccess {
 	public void refreshDbLists() {
 		this.getAdminList();
 		this.getChannelList();
+	}
+
+	public void setChannelControlMode( Channel channel, ChannelInfo.ControlMode control_mode ) {
+		Connection con;
+		try {
+			con = pool.getConnection(timeout);
+
+			PreparedStatement s = con.prepareStatement("UPDATE `channels` SET control_mode = ? WHERE `channel` = ?");
+			s.setInt(1, control_mode.ordinal());
+			s.setString(2, channel.getName());
+			s.executeUpdate();
+
+			this.channel_data.get(channel.getName()).control = control_mode;
+
+			con.close();
+		} catch (SQLException ex) {
+			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
+		}
 	}
 }
