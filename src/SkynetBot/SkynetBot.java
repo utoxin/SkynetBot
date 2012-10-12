@@ -41,6 +41,7 @@ public class SkynetBot {
 	public SkynetBot() {
 		bot = new PircBotX();
 
+		bot.getListenerManager().addListener(new ServerListener());
 		bot.getListenerManager().addListener(new AdminCommandListener());
 
 		bot.setEncoding(Charset.forName("UTF-8"));

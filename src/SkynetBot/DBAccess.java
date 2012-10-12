@@ -150,6 +150,27 @@ public class DBAccess {
 		this.getChannelList();
 	}
 
+	public void saveChannel( Channel channel ) {
+		Connection con;
+		try {
+			con = pool.getConnection(timeout);
+
+			PreparedStatement s = con.prepareStatement("INSERT INTO `channels` (`channel`, `control_mode`) VALUES (?, 0)");
+			s.setString(1, channel.getName());
+			s.executeUpdate();
+
+			if (!this.channel_data.containsKey(channel.getName())) {
+				ChannelInfo new_channel = new ChannelInfo(channel);
+
+				this.channel_data.put(channel.getName(), new_channel);
+			}
+
+			con.close();
+		} catch (SQLException ex) {
+			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
+		}
+	}
+
 	public void setChannelControlMode( Channel channel, ChannelInfo.ControlMode control_mode ) {
 		Connection con;
 		try {
