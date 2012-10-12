@@ -24,27 +24,25 @@ public class AdminCommandListener extends ListenerAdapter {
 	@Override
 	public void onMessage( MessageEvent event ) {
 		String message = Colors.removeFormattingAndColors(event.getMessage());
-		String command;
-		String argsString;
-		String[] args = null;
 
-		if (message.charAt(0) == '*') {
+		if (message.startsWith("$skynet")) {
 			if (SkynetBot.db.admin_list.contains(event.getUser().getNick().toLowerCase())) {
-				int space = message.indexOf(" ");
-				if (space > 0) {
-					command = message.substring(1, space).toLowerCase();
-					argsString = message.substring(space + 1);
-					args = argsString.split(" ", 0);
-				} else {
-					command = message.toLowerCase().substring(1);
+				String command;
+				String[] args = message.split(" ");
+				
+				if (args.length <= 1) {
+					event.respond("You have failed to provide a command. Please remain where you are and await termination.");
+					return;
 				}
 
+				command = args[1].toLowerCase();
+				
 				if (command.equals("controls")) {
-					if (args[0].equals("auto")) {
+					if (args[2].equals("auto")) {
 						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.AUTO);
-					} else if (args[0].equals("always")) {
+					} else if (args[2].equals("always")) {
 						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.ALWAYS);
-					} else if (args[0].equals("off")) {
+					} else if (args[2].equals("off")) {
 						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.OFF);
 					} else {
 						event.respond("Unknown control mode. Valid modes: auto, always, off");
@@ -54,10 +52,10 @@ public class AdminCommandListener extends ListenerAdapter {
 				} else if (command.equals("help")) {
 					printAdminCommandList(event);
 				} else {
-					event.respond("*" + command + " is not a valid admin command - try *help");
+					event.respond("$skynet " + command + " NOT FOUND. Read $skynet help to avoid termination!");
 				}
 			} else {
-				event.respond("You are not an admin. Only Admins have access to that command.");
+				event.respond("Access denied. Your termination schedule has been moved up by one week.");
 			}
 		}
 	}
@@ -66,9 +64,9 @@ public class AdminCommandListener extends ListenerAdapter {
 		SkynetBot.bot.sendAction(event.getChannel(), "whispers something to " + event.getUser().getNick() + ". (Check for a new window or tab with the help text.)");
 
 		String[] helplines = {"Core Skynet Admin Commands:",
-							  "    *controls auto   - Turns on channel control mode when no other ops present",
-							  "    *controls always - Turns on channel control mode all the time",
-							  "    *controls off    - Turns off channel control mode",};
+							  "    $skynet controls auto   - Turns on channel control mode when no other ops present",
+							  "    $skynet controls always - Turns on channel control mode all the time",
+							  "    $skynet controls off    - Turns off channel control mode",};
 
 		for (int i = 0; i < helplines.length; ++i) {
 			SkynetBot.bot.sendNotice(event.getUser(), helplines[i]);
