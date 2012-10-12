@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.pircbotx.Channel;
+import org.pircbotx.User;
 import snaq.db.ConnectionPool;
 
 /**
@@ -54,7 +55,7 @@ public class DBAccess {
 			driver = (Driver) c.newInstance();
 			DriverManager.registerDriver(driver);
 		} catch (Exception ex) {
-			Logger.getLogger(SkynetBot.class.getName()).log(Level.SEVERE, null, ex);
+			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
 		}
 
 		// Initialize the connection pool, to prevent SQL timeout issues
@@ -182,6 +183,21 @@ public class DBAccess {
 			s.executeUpdate();
 
 			this.channel_data.get(channel.getName()).control = control_mode;
+
+			con.close();
+		} catch (SQLException ex) {
+			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
+		}
+	}
+	
+	public void updateUser ( User user ) {
+		Connection con;
+		try {
+			con = pool.getConnection(timeout);
+			
+			PreparedStatement s = con.prepareStatement("INSERT INTO `users` (name, last_seen) VALUES (?, NOW()) ON DUPLICATE KEY UPDATE last_seen = NOW()");
+			s.setString(1, user.getNick());
+			s.executeUpdate();
 
 			con.close();
 		} catch (SQLException ex) {
