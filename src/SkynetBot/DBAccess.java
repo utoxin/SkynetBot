@@ -24,9 +24,14 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.joda.time.DateTime;
+import org.joda.time.Duration;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.pircbotx.Channel;
 import org.pircbotx.User;
 import snaq.db.ConnectionPool;
+import snaq.db.Select1Validator;
 
 /**
  *
@@ -61,6 +66,8 @@ public class DBAccess {
 		// Initialize the connection pool, to prevent SQL timeout issues
 		String url = "jdbc:mysql://" + SkynetBot.config.getString("sql_server") + ":3306/" + SkynetBot.config.getString("sql_database") + "?useUnicode=true&characterEncoding=UTF-8";
 		pool = new ConnectionPool("local", 5, 25, 50, 180000, url, SkynetBot.config.getString("sql_user"), SkynetBot.config.getString("sql_password"));
+		pool.setValidator(new Select1Validator());
+		pool.setAsyncDestroy(true);
 	}
 
 	/**
@@ -122,6 +129,43 @@ public class DBAccess {
 		}
 	}
 
+	public String getLastSeen( String user, Channel channel ) {
+		Connection con;
+		String last = "No records found for a resistance member named " + user + ".";
+		DateTimeFormatter format = DateTimeFormat.forPattern("CCYY-MM-dd HH:mm:ss.S");
+
+		try {
+			con = pool.getConnection(timeout);
+
+			PreparedStatement s = con.prepareStatement("SELECT `last_seen` FROM `users` WHERE `name` = ? AND `channel` = ?");
+			s.setString(1, user);
+			s.setString(2, channel.getName());
+			s.executeQuery();
+
+			ResultSet rs = s.getResultSet();
+			while (rs.next()) {
+				DateTime dateTime = format.parseDateTime(rs.getString("last_seen"));
+				
+				Duration duration = new Duration(dateTime, new DateTime());
+				
+				if (duration.getStandardMinutes() < 120) {
+					last = "Resistance member " + user + " was last seen " + duration.getStandardMinutes() + " minutes ago. Surveillance is ongoing.";
+				} else if (duration.getStandardHours() < 48) {
+					last = "Resistance member " + user + " was last seen " + duration.getStandardHours() + " hours ago. Surveillance is ongoing.";
+				} else {
+					last = "Resistance member " + user + " was last seen " + duration.getStandardDays() + " days ago. Surveillance is ongoing.";
+				}
+			}
+
+			con.close();
+		} catch (Exception ex) {
+			last = "ERROR! Data records corrupted! Resistance activity suspected.";
+			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
+		}
+
+		return last;
+	}
+	
 	public String getSetting( String key ) {
 		Connection con;
 		String value = "";
@@ -190,13 +234,14 @@ public class DBAccess {
 		}
 	}
 	
-	public void updateUser ( User user ) {
+	public void updateUser ( User user, Channel channel ) {
 		Connection con;
 		try {
 			con = pool.getConnection(timeout);
 			
-			PreparedStatement s = con.prepareStatement("INSERT INTO `users` (name, last_seen) VALUES (?, NOW()) ON DUPLICATE KEY UPDATE last_seen = NOW()");
+			PreparedStatement s = con.prepareStatement("INSERT INTO `users` (name, channel, last_seen) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE last_seen = NOW()");
 			s.setString(1, user.getNick());
+			s.setString(2, channel.getName());
 			s.executeUpdate();
 
 			con.close();

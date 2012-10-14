@@ -12,6 +12,7 @@
  */
 package SkynetBot;
 
+import java.util.regex.Pattern;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.ActionEvent;
 import org.pircbotx.hooks.events.InviteEvent;
@@ -26,31 +27,37 @@ public class ServerListener extends ListenerAdapter {
 
 	@Override
 	public void onInvite( InviteEvent event ) {
-		if (!SkynetBot.db.channel_data.containsKey(event.getChannel())) {
+	if (!SkynetBot.db.channel_data.containsKey(event.getChannel())) {
 			SkynetBot.bot.joinChannel(event.getChannel());
 			SkynetBot.db.saveChannel(SkynetBot.bot.getChannel(event.getChannel()));
-			SkynetBot.bot.sendRawLineNow("CHANSERV AOP " + event.getChannel() + " ADD " + SkynetBot.bot.getNick());
+			SkynetBot.bot.sendRawLineNow("CHANSERV ACCESS " + event.getChannel() + " ADD " + SkynetBot.bot.getNick() + " 5");
 		}
 	}
 
 	@Override
 	public void onJoin ( JoinEvent event ) {
 		if (!event.getUser().getNick().equals(SkynetBot.bot.getNick())) {
-			SkynetBot.db.updateUser(event.getUser());
+			if (!Pattern.matches("(?i)mib_......", event.getUser().getNick()) && !Pattern.matches("(?i)guest.*", event.getUser().getNick())) {
+				SkynetBot.db.updateUser(event.getUser(), event.getChannel());
+			}
 		}
 	}
 	
 	@Override
 	public void onMessage ( MessageEvent event ) {
 		if (!event.getUser().getNick().equals(SkynetBot.bot.getNick())) {
-			SkynetBot.db.updateUser(event.getUser());
+			if (!Pattern.matches("(?i)mib_......", event.getUser().getNick()) && !Pattern.matches("(?i)guest.*", event.getUser().getNick())) {
+				SkynetBot.db.updateUser(event.getUser(), event.getChannel());
+			}
 		}
 	}
 	
 	@Override
 	public void onAction ( ActionEvent event ) {
 		if (!event.getUser().getNick().equals(SkynetBot.bot.getNick())) {
-			SkynetBot.db.updateUser(event.getUser());
+			if (!Pattern.matches("(?i)mib_......", event.getUser().getNick()) && !Pattern.matches("(?i)guest.*", event.getUser().getNick())) {
+				SkynetBot.db.updateUser(event.getUser(), event.getChannel());
+			}
 		}
 	}
 }

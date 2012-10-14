@@ -43,6 +43,7 @@ public class SkynetBot {
 
 		bot.getListenerManager().addListener(new ServerListener());
 		bot.getListenerManager().addListener(new AdminCommandListener());
+		bot.getListenerManager().addListener(new UserCommandListener());
 
 		bot.setEncoding(Charset.forName("UTF-8"));
 		bot.setLogin("Cyberdyne");

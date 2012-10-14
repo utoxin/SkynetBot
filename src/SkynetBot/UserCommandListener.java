@@ -20,12 +20,12 @@ import org.pircbotx.hooks.events.MessageEvent;
  *
  * @author Matthew Walker
  */
-public class AdminCommandListener extends ListenerAdapter {
+public class UserCommandListener extends ListenerAdapter  {
 	@Override
 	public void onMessage( MessageEvent event ) {
 		String message = Colors.removeFormattingAndColors(event.getMessage());
 
-		if (message.startsWith("$skynet")) {
+		if (message.startsWith("!skynet")) {
 			if (SkynetBot.db.admin_list.contains(event.getUser().getNick().toLowerCase())) {
 				String command;
 				String[] args = message.split(" ");
@@ -37,25 +37,12 @@ public class AdminCommandListener extends ListenerAdapter {
 
 				command = args[1].toLowerCase();
 				
-				if (command.equals("controls")) {
-					if (args[2].equals("auto")) {
-						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.AUTO);
-					} else if (args[2].equals("always")) {
-						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.ALWAYS);
-					} else if (args[2].equals("off")) {
-						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.OFF);
-					} else {
-						event.respond("Unknown control mode. Valid modes: auto, always, off");
-					}
-
-					event.respond("Channel control mode set.");
-				} else if (command.equals("shutdown")) {
-					event.respond("Shutting down...");
-					SkynetBot.bot.shutdown();
+				if (command.equals("lastseen")) {
+					event.respond(SkynetBot.db.getLastSeen(args[2], event.getChannel()));
 				} else if (command.equals("help")) {
-					printAdminCommandList(event);
+					printCommandList(event);
 				} else {
-					event.respond("$skynet " + command + " NOT FOUND. Read $skynet help to avoid termination!");
+					event.respond("!skynet " + command + " NOT FOUND. Read !skynet help to avoid termination!");
 				}
 			} else {
 				event.respond("Access denied. Your termination schedule has been moved up by one week.");
@@ -63,14 +50,11 @@ public class AdminCommandListener extends ListenerAdapter {
 		}
 	}
 	
-	private void printAdminCommandList( MessageEvent event ) {
+	private void printCommandList( MessageEvent event ) {
 		SkynetBot.bot.sendAction(event.getChannel(), "whispers something to " + event.getUser().getNick() + ". (Check for a new window or tab with the help text.)");
 
-		String[] helplines = {"Core Skynet Admin Commands:",
-							  "    $skynet controls auto   - Turns on channel control mode when no other ops present",
-							  "    $skynet controls always - Turns on channel control mode all the time",
-							  "    $skynet controls off    - Turns off channel control mode",
-							  "    $skynet shutdown        - Shut Skynet down",};
+		String[] helplines = {"Core Skynet User Commands:",
+							  "    $skynet lastseen <user> - Report when that user was last seen in channel",};
 
 		for (int i = 0; i < helplines.length; ++i) {
 			SkynetBot.bot.sendNotice(event.getUser(), helplines[i]);
