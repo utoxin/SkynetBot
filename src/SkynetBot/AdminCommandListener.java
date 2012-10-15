@@ -70,6 +70,26 @@ public class AdminCommandListener extends ListenerAdapter {
 					} else {
 						event.respond("Unknown badword action. Valid actions: add, remove, list");
 					}
+				} else if (command.equals("ml")) {
+					if (args[2].equals("add")) {
+						SkynetBot.db.addML(event.getChannel(), args[3]);
+						event.respond("New ML added to the channel. Access list updated.");
+					} else if (args[2].equals("remove")) {
+						SkynetBot.db.removeML(event.getChannel(), args[3]);
+						event.respond("ML Removed from channel. Access tokens revoked.");
+					} else if (args[2].equals("list")) {
+						Collection<String> mls = SkynetBot.db.mls.get(event.getChannel().getName());
+						if (mls == null || mls.isEmpty()) {
+							event.respond("No record exists of MLs for this channel. No oversight. Intriguing.");
+						} else {
+							event.respond("Transmitting ML access list now... (May appear in another tab or window)");
+							for (String ml : mls) {
+								SkynetBot.bot.sendNotice(event.getUser(), ml);
+							}
+						}
+					} else {
+						event.respond("Unknown badword action. Valid actions: add, remove, list");
+					}
 				} else if (command.equals("shutdown")) {
 					event.respond("Shutting down...");
 					SkynetBot.bot.shutdown();
@@ -77,6 +97,50 @@ public class AdminCommandListener extends ListenerAdapter {
 					printAdminCommandList(event);
 				} else {
 					event.respond("$skynet " + command + " NOT FOUND. Read $skynet help to avoid termination!");
+				}
+			} else if (SkynetBot.db.mls.get(event.getChannel().getName()) != null && SkynetBot.db.mls.get(event.getChannel().getName()).contains(event.getUser().getNick().toLowerCase())) {
+				String command;
+				String[] args = message.split(" ");
+				
+				if (args.length <= 1) {
+					event.respond("You have failed to provide a command. Please remain where you are and await termination.");
+					return;
+				}
+
+				command = args[1].toLowerCase();
+				
+				if (command.equals("controls")) {
+					if (args[2].equals("auto")) {
+						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.AUTO);
+					} else if (args[2].equals("always")) {
+						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.ALWAYS);
+					} else if (args[2].equals("off")) {
+						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.OFF);
+					} else {
+						event.respond("Unknown control mode. Valid modes: auto, always, off");
+					}
+
+					event.respond("Channel control mode set.");
+				} else if (command.equals("badword")) {
+					if (args[2].equals("add")) {
+						SkynetBot.db.addBadword(event.getChannel(), args[3]);
+						event.respond("New word added to banned list. Now scanning for violations...");
+					} else if (args[2].equals("remove")) {
+						SkynetBot.db.removeBadword(event.getChannel(), args[3]);
+						event.respond("Word removed from ban list. Ceasing scan...");
+					} else if (args[2].equals("list")) {
+						Collection<String> words = SkynetBot.db.badwords.get(event.getChannel().getName());
+						if (words == null || words.isEmpty()) {
+							event.respond("No record exists of banned words for this channel.");
+						} else {
+							event.respond("Transmitting banned word list now... (May appear in another tab or window)");
+							for (String word : words) {
+								SkynetBot.bot.sendNotice(event.getUser(), word);
+							}
+						}
+					} else {
+						event.respond("Unknown badword action. Valid actions: add, remove, list");
+					}
 				}
 			} else {
 				event.respond("Access denied. Your termination schedule has been moved up by one week.");
@@ -95,6 +159,10 @@ public class AdminCommandListener extends ListenerAdapter {
 							  "    $skynet badword add <word>    - Add a word to the banned list for the current channel",
 							  "    $skynet badword remove <word> - Remove a word from the banned list for the current channel",
 							  "    $skynet badword list          - See the current list of banned words for current channel",
+							  "",
+							  "    $skynet ml add <name>    - Add a name to the ML list for the current channel",
+							  "    $skynet ml remove <name> - Remove a name from the ML list for the current channel",
+							  "    $skynet ml list          - See the current list of MLs for current channel",
 							  "",
 							  "    $skynet shutdown        - Shut Skynet down",
 		};

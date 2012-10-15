@@ -26,26 +26,22 @@ public class UserCommandListener extends ListenerAdapter  {
 		String message = Colors.removeFormattingAndColors(event.getMessage());
 
 		if (message.startsWith("!skynet")) {
-			if (SkynetBot.db.admin_list.contains(event.getUser().getNick().toLowerCase())) {
-				String command;
-				String[] args = message.split(" ");
-				
-				if (args.length <= 1) {
-					event.respond("You have failed to provide a command. Please remain where you are and await termination.");
-					return;
-				}
+			String command;
+			String[] args = message.split(" ");
 
-				command = args[1].toLowerCase();
-				
-				if (command.equals("lastseen")) {
-					event.respond(SkynetBot.db.getLastSeen(args[2], event.getChannel()));
-				} else if (command.equals("help")) {
-					printCommandList(event);
-				} else {
-					event.respond("!skynet " + command + " NOT FOUND. Read !skynet help to avoid termination!");
-				}
+			if (args.length <= 1) {
+				event.respond("You have failed to provide a command. Please remain where you are and await termination.");
+				return;
+			}
+
+			command = args[1].toLowerCase();
+
+			if (command.equals("lastseen")) {
+				event.respond(SkynetBot.db.getLastSeen(args[2], event.getChannel()));
+			} else if (command.equals("help")) {
+				printCommandList(event);
 			} else {
-				event.respond("Access denied. Your termination schedule has been moved up by one week.");
+				event.respond("!skynet " + command + " NOT FOUND. Read !skynet help to avoid termination!");
 			}
 		}
 	}
