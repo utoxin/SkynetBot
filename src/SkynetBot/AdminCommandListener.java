@@ -12,6 +12,7 @@
  */
 package SkynetBot;
 
+import java.util.Collection;
 import org.pircbotx.Colors;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.MessageEvent;
@@ -49,6 +50,26 @@ public class AdminCommandListener extends ListenerAdapter {
 					}
 
 					event.respond("Channel control mode set.");
+				} else if (command.equals("badword")) {
+					if (args[2].equals("add")) {
+						SkynetBot.db.addBadword(event.getChannel(), args[3]);
+						event.respond("New word added to banned list. Now scanning for violations...");
+					} else if (args[2].equals("remove")) {
+						SkynetBot.db.removeBadword(event.getChannel(), args[3]);
+						event.respond("Word removed from ban list. Ceasing scan...");
+					} else if (args[2].equals("list")) {
+						Collection<String> words = SkynetBot.db.badwords.get(event.getChannel().getName());
+						if (words == null || words.isEmpty()) {
+							event.respond("No record exists of banned words for this channel.");
+						} else {
+							event.respond("Transmitting banned word list now... (May appear in another tab or window)");
+							for (String word : words) {
+								SkynetBot.bot.sendNotice(event.getUser(), word);
+							}
+						}
+					} else {
+						event.respond("Unknown badword action. Valid actions: add, remove, list");
+					}
 				} else if (command.equals("shutdown")) {
 					event.respond("Shutting down...");
 					SkynetBot.bot.shutdown();
@@ -70,7 +91,13 @@ public class AdminCommandListener extends ListenerAdapter {
 							  "    $skynet controls auto   - Turns on channel control mode when no other ops present",
 							  "    $skynet controls always - Turns on channel control mode all the time",
 							  "    $skynet controls off    - Turns off channel control mode",
-							  "    $skynet shutdown        - Shut Skynet down",};
+							  "",
+							  "    $skynet badword add <word>    - Add a word to the banned list for the current channel",
+							  "    $skynet badword remove <word> - Remove a word from the banned list for the current channel",
+							  "    $skynet badword list          - See the current list of banned words for current channel",
+							  "",
+							  "    $skynet shutdown        - Shut Skynet down",
+		};
 
 		for (int i = 0; i < helplines.length; ++i) {
 			SkynetBot.bot.sendNotice(event.getUser(), helplines[i]);

@@ -19,6 +19,8 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -43,6 +45,7 @@ public class DBAccess {
 	protected ConnectionPool pool;
 	protected Set<String> admin_list = new HashSet<String>(16);
 	protected HashMap<String, ChannelInfo> channel_data = new HashMap<String, ChannelInfo>(62);
+	protected HashMap<String, Collection<String>> badwords = new HashMap<String, Collection<String>>();
 
 	static {
 		instance = new DBAccess();
@@ -79,6 +82,29 @@ public class DBAccess {
 		return instance;
 	}
 
+	public void addBadword( Channel channel, String word ) {
+		Connection con;
+		try {
+			con = pool.getConnection(timeout);
+
+			PreparedStatement s = con.prepareStatement("INSERT INTO `channel_badwords` SET `channel` = ?, `word` = ?");
+			s.setString(1, channel.getName());
+			s.setString(2, word);
+			s.executeUpdate();
+
+			Collection<String> words = badwords.get(channel.getName());
+			if (words == null) {
+				words = new ArrayList<String>();
+				badwords.put(channel.getName(), words);
+			}
+			words.add(word);
+
+			con.close();
+		} catch (SQLException ex) {
+			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
+		}
+	}
+	
 	public void getAdminList() {
 		Connection con;
 		try {
@@ -100,6 +126,35 @@ public class DBAccess {
 		}
 	}
 
+	public void getBadwords() {
+		Connection con;
+		try {
+			con = pool.getConnection(timeout);
+
+			PreparedStatement s = con.prepareStatement("SELECT `channel`, `word` FROM `channel_badwords`");
+			s.executeQuery();
+			
+			ResultSet rs = s.getResultSet();
+			String channel;
+			String word;
+			while (rs.next()) {
+				channel = rs.getString("channel");
+				word = rs.getString("word");
+
+				Collection<String> words = badwords.get(channel);
+				if (words == null) {
+					words = new ArrayList<String>();
+					badwords.put(channel, words);
+				}
+				words.add(word);
+			}
+
+			con.close();
+		} catch (SQLException ex) {
+			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
+		}
+	}
+	
 	public void getChannelList() {
 		Connection con;
 		ChannelInfo ci;
@@ -193,8 +248,32 @@ public class DBAccess {
 	public void refreshDbLists() {
 		this.getAdminList();
 		this.getChannelList();
+		this.getBadwords();
 	}
 
+	public void removeBadword( Channel channel, String word ) {
+		Connection con;
+		try {
+			con = pool.getConnection(timeout);
+
+			PreparedStatement s = con.prepareStatement("DELETE FROM `channel_badwords` WHERE `channel` = ? AND `word` = ?");
+			s.setString(1, channel.getName());
+			s.setString(2, word);
+			s.executeUpdate();
+
+			Collection<String> words = badwords.get(channel.getName());
+			if (words != null) {
+				words.remove(word);
+			}
+
+			
+			
+			con.close();
+		} catch (SQLException ex) {
+			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
+		}
+	}
+	
 	public void saveChannel( Channel channel ) {
 		Connection con;
 		try {
