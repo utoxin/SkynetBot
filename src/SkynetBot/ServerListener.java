@@ -78,7 +78,7 @@ public class ServerListener extends ListenerAdapter {
 			for (String word : SkynetBot.db.badwords.get(channel.getName())) {
 				Pattern pattern = SkynetBot.db.badwordPatterns.get(word);
 
-				if (pattern.matcher(message).matches()) {
+				if (pattern.matcher(message).find()) {
 					SkynetBot.bot.sendMessage(channel, user.getNick() + ": WARNING! You have violated the policies of this channel! Please cease using the word '" + word + "' to avoid termination!");
 					break;
 				}

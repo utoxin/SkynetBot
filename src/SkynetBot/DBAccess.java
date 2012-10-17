@@ -103,7 +103,8 @@ public class DBAccess {
 			words.add(word);
 
 			if (badwordPatterns.get(word) == null) {
-				badwordPatterns.put(word, Pattern.compile(".*\\Q" + word + "\\E.*"));
+//				badwordPatterns.put(word, Pattern.compile("(?ui)(?:\\W|\\b)" + Pattern.quote(word) + "(?:\\W|\\b)"));
+				badwordPatterns.put(word, Pattern.compile(word, Pattern.CASE_INSENSITIVE));
 			}
 
 			con.close();
