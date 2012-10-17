@@ -43,8 +43,10 @@ public class ServerListener extends ListenerAdapter {
 	@Override
 	public void onJoin( JoinEvent event ) {
 		if (!event.getUser().getNick().equals(SkynetBot.bot.getNick())) {
-			if (!Pattern.matches("(?i)mib_......", event.getUser().getNick()) && !Pattern.matches("(?i)guest.*", event.getUser().getNick())) {
-				SkynetBot.db.updateUser(event.getUser(), event.getChannel());
+			SkynetBot.db.updateUser(event.getUser(), event.getChannel());
+
+			if (SkynetBot.db.isUserBanned(event.getUser(), event.getChannel())) {
+				SkynetBot.bot.sendRawLine("CHANSERV KICK " + event.getChannel().getName() + " " + event.getUser().getNick() + " Exceeded the warning threshold.");
 			}
 		}
 	}
@@ -52,9 +54,7 @@ public class ServerListener extends ListenerAdapter {
 	@Override
 	public void onMessage( MessageEvent event ) {
 		if (!event.getUser().getNick().equals(SkynetBot.bot.getNick())) {
-			if (!Pattern.matches("(?i)mib_......", event.getUser().getNick()) && !Pattern.matches("(?i)guest.*", event.getUser().getNick())) {
-				SkynetBot.db.updateUser(event.getUser(), event.getChannel());
-			}
+			SkynetBot.db.updateUser(event.getUser(), event.getChannel());
 		}
 
 		updateLog(event.getChannel(), event.getUser(), event.getMessage(), event.getTimestamp());
@@ -64,9 +64,7 @@ public class ServerListener extends ListenerAdapter {
 	@Override
 	public void onAction( ActionEvent event ) {
 		if (!event.getUser().getNick().equals(SkynetBot.bot.getNick())) {
-			if (!Pattern.matches("(?i)mib_......", event.getUser().getNick()) && !Pattern.matches("(?i)guest.*", event.getUser().getNick())) {
-				SkynetBot.db.updateUser(event.getUser(), event.getChannel());
-			}
+			SkynetBot.db.updateUser(event.getUser(), event.getChannel());
 		}
 
 		updateLog(event.getChannel(), event.getUser(), event.getMessage(), event.getTimestamp());
@@ -79,10 +77,21 @@ public class ServerListener extends ListenerAdapter {
 				Pattern pattern = SkynetBot.db.badwordPatterns.get(word);
 
 				if (pattern.matcher(message).find()) {
-					SkynetBot.bot.sendMessage(channel, user.getNick() + ": WARNING! You have violated the policies of this channel! Please cease using the word '" + word + "' to avoid termination!");
+					handleViolation(channel, user, word);
 					break;
 				}
 			}
+		}
+	}
+
+	protected void handleViolation(Channel channel, User user, String word) {
+		int warning_count = SkynetBot.db.getWarningCount(user, channel, true);
+
+		if (warning_count >= 3) {
+			SkynetBot.bot.sendRawLine("CHANSERV KICK " + channel.getName() + " " + user.getNick() + " Exceeded the warning threshold.");
+			SkynetBot.db.banUser(user, channel);
+		} else {
+			SkynetBot.bot.sendMessage(channel, user.getNick() + ": WARNING! You have violated the policies of this channel! Please cease using the word '" + word + "' to avoid termination! You have " + warning_count + " warnings on file. 1 warning is removed every 24 hours you go without being warned again. 3 warnings results in a temporary ban from this channel.");
 		}
 	}
 	

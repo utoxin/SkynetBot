@@ -53,6 +53,7 @@ public class AdminCommandListener extends ListenerAdapter {
 				} else if (command.equals("badword")) {
 					if (args[2].equals("add")) {
 						SkynetBot.db.addBadword(event.getChannel(), args[3]);
+						SkynetBot.bot.sendMessage(event.getChannel(), "$badword " + args[3]);
 						event.respond("New word added to banned list. Now scanning for violations...");
 					} else if (args[2].equals("remove")) {
 						SkynetBot.db.removeBadword(event.getChannel(), args[3]);

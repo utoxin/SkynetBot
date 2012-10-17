@@ -103,8 +103,7 @@ public class DBAccess {
 			words.add(word);
 
 			if (badwordPatterns.get(word) == null) {
-//				badwordPatterns.put(word, Pattern.compile("(?ui)(?:\\W|\\b)" + Pattern.quote(word) + "(?:\\W|\\b)"));
-				badwordPatterns.put(word, Pattern.compile(word, Pattern.CASE_INSENSITIVE));
+				badwordPatterns.put(word, Pattern.compile("(?ui)(?:\\W|\\b)" + Pattern.quote(word) + "(?:\\W|\\b)"));
 			}
 
 			con.close();
@@ -169,6 +168,9 @@ public class DBAccess {
 			ResultSet rs = s.getResultSet();
 			String channel;
 			String word;
+			
+			badwords.clear();
+			badwordPatterns.clear();
 			while (rs.next()) {
 				channel = rs.getString("channel");
 				word = rs.getString("word");
@@ -181,7 +183,7 @@ public class DBAccess {
 				words.add(word);
 
 				if (badwordPatterns.get(word) == null) {
-					badwordPatterns.put(word, Pattern.compile(".*\\Q" + word + "\\E.*"));
+					badwordPatterns.put(word, Pattern.compile("(?ui)(?:\\W|\\b)" + Pattern.quote(word) + "(?:\\W|\\b)"));
 				}
 			}
 
@@ -334,6 +336,121 @@ public class DBAccess {
 		}
 
 		return value;
+	}
+
+	public int getBanLevel( User user, Channel channel ) {
+		int level = 0;
+		Connection con;
+		PreparedStatement s;
+
+		try {
+			con = pool.getConnection(timeout);
+			
+			s = con.prepareStatement("SELECT `ban_level` FROM `users` WHERE `name` = ? AND `channel` = ?");
+			s.setString(1, user.getNick());
+			s.setString(2, channel.getName());
+			s.executeQuery();
+
+			ResultSet rs = s.getResultSet();
+			while (rs.next()) {
+				level = rs.getInt("ban_level");
+			}
+
+			con.close();
+		} catch (Exception ex) {
+			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
+		}
+
+		return level;
+	}
+
+	public void banUser( User user, Channel channel ) {
+		int currentLevel = getBanLevel(user, channel);
+		currentLevel++;
+
+		Connection con;
+		PreparedStatement s;
+
+		try {
+			con = pool.getConnection(timeout);
+
+			s = con.prepareStatement("UPDATE `users` SET `ban_level` = ?, ban_update = NOW() + INTERVAL ? HOUR, ban_ends = NOW() + INTERVAL ? HOUR WHERE `name` = ? AND `channel` = ?");
+			s.setInt(1, currentLevel);
+			s.setInt(2, (int) Math.pow(2, currentLevel));
+			s.setInt(3, (int) Math.pow(2, currentLevel));
+			s.setString(4, user.getNick());
+			s.setString(5, channel.getName());
+			s.executeUpdate();
+
+			con.close();
+		} catch (Exception ex) {
+			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
+		}
+	}
+	
+	public boolean isUserBanned( User user, Channel channel ) {
+		boolean banned = false;
+		Connection con;
+		PreparedStatement s;
+
+		try {
+			con = pool.getConnection(timeout);
+			
+			s = con.prepareStatement("UPDATE `users` SET `ban_level` = `ban_level` - 1, ban_update = NOW() WHERE ban_update < NOW() - INTERVAL 24 HOUR AND ban_level > 0");
+			s.executeUpdate();
+
+			s = con.prepareStatement("SELECT `ban_level` FROM `users` WHERE `name` = ? AND `channel` = ? AND ban_ends > NOW()");
+			s.setString(1, user.getNick());
+			s.setString(2, channel.getName());
+			s.executeQuery();
+
+			ResultSet rs = s.getResultSet();
+			while (rs.next()) {
+				banned = true;
+			}
+
+			con.close();
+		} catch (Exception ex) {
+			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
+		}
+
+		return banned;
+	}
+	
+	public int getWarningCount( User user, Channel channel, boolean newWarning ) {
+		int level = 0;
+		Connection con;
+		PreparedStatement s;
+
+		try {
+			con = pool.getConnection(timeout);
+			
+			s = con.prepareStatement("UPDATE `users` SET `warnings` = `warnings` - 1, last_warning = NOW() WHERE last_warning < NOW() - INTERVAL 24 HOUR AND warnings > 0");
+			s.executeUpdate();
+
+			if (newWarning) {
+				s = con.prepareStatement("UPDATE `users` SET `warnings` = `warnings` + 1, last_warning = NOW() WHERE `name` = ? AND `channel` = ?");
+				s.setString(1, user.getNick());
+				s.setString(2, channel.getName());
+				s.executeUpdate();
+			}
+
+			s = con.prepareStatement("SELECT `warnings` FROM `users` WHERE `name` = ? AND `channel` = ?");
+			s.setString(1, user.getNick());
+			s.setString(2, channel.getName());
+			s.executeQuery();
+
+			ResultSet rs = s.getResultSet();
+			while (rs.next()) {
+				level = rs.getInt("warnings");
+			}
+
+			con.close();
+		} catch (Exception ex) {
+			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
+		}
+
+		return level;
 	}
 
 	public void refreshDbLists() {
