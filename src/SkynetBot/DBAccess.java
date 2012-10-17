@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.format.DateTimeFormat;
@@ -46,6 +47,7 @@ public class DBAccess {
 	protected Set<String> admin_list = new HashSet<String>(16);
 	protected HashMap<String, ChannelInfo> channel_data = new HashMap<String, ChannelInfo>(62);
 	protected HashMap<String, Collection<String>> badwords = new HashMap<String, Collection<String>>();
+	protected HashMap<String, Pattern> badwordPatterns = new HashMap<String, Pattern>();
 	protected HashMap<String, Collection<String>> mls = new HashMap<String, Collection<String>>();
 
 	static {
@@ -99,6 +101,10 @@ public class DBAccess {
 				badwords.put(channel.getName(), words);
 			}
 			words.add(word);
+
+			if (badwordPatterns.get(word) == null) {
+				badwordPatterns.put(word, Pattern.compile(".*\\Q" + word + "\\E.*"));
+			}
 
 			con.close();
 		} catch (SQLException ex) {
@@ -172,6 +178,10 @@ public class DBAccess {
 					badwords.put(channel, words);
 				}
 				words.add(word);
+
+				if (badwordPatterns.get(word) == null) {
+					badwordPatterns.put(word, Pattern.compile(".*\\Q" + word + "\\E.*"));
+				}
 			}
 
 			con.close();

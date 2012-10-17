@@ -14,7 +14,6 @@ package SkynetBot;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 import org.pircbotx.Channel;
@@ -58,7 +57,8 @@ public class ServerListener extends ListenerAdapter {
 			}
 		}
 
-		updateLog(event.getChannel(), event.getMessage(), event.getTimestamp(), event.getUser());
+		updateLog(event.getChannel(), event.getUser(), event.getMessage(), event.getTimestamp());
+		checkMessage(event.getChannel(), event.getUser(), event.getMessage());
 	}
 
 	@Override
@@ -69,10 +69,24 @@ public class ServerListener extends ListenerAdapter {
 			}
 		}
 
-		updateLog(event.getChannel(), event.getMessage(), event.getTimestamp(), event.getUser());
+		updateLog(event.getChannel(), event.getUser(), event.getMessage(), event.getTimestamp());
+		checkMessage(event.getChannel(), event.getUser(), event.getMessage());
 	}
 
-	protected void updateLog( Channel channel, String message, double timestamp, User user ) {
+	protected void checkMessage( Channel channel, User user, String message ) {
+		if (!user.getNick().equals("Timmy") && SkynetBot.db.badwords.get(channel.getName()) != null) {
+			for (String word : SkynetBot.db.badwords.get(channel.getName())) {
+				Pattern pattern = SkynetBot.db.badwordPatterns.get(word);
+
+				if (pattern.matcher(message).matches()) {
+					SkynetBot.bot.sendMessage(channel, user.getNick() + ": WARNING! You have violated the policies of this channel! Please cease using the word '" + word + "' to avoid termination!");
+					break;
+				}
+			}
+		}
+	}
+	
+	protected void updateLog( Channel channel, User user, String message, double timestamp ) {
 		String timestampedMessage;
 		SimpleDateFormat dateFormatter = new SimpleDateFormat("HH:mm:ss");
 
