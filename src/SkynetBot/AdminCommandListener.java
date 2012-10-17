@@ -30,14 +30,14 @@ public class AdminCommandListener extends ListenerAdapter {
 			if (SkynetBot.db.admin_list.contains(event.getUser().getNick().toLowerCase())) {
 				String command;
 				String[] args = message.split(" ");
-				
+
 				if (args.length <= 1) {
 					event.respond("You have failed to provide a command. Please remain where you are and await termination.");
 					return;
 				}
 
 				command = args[1].toLowerCase();
-				
+
 				if (command.equals("controls")) {
 					if (args[2].equals("auto")) {
 						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.AUTO);
@@ -72,11 +72,19 @@ public class AdminCommandListener extends ListenerAdapter {
 					}
 				} else if (command.equals("ml")) {
 					if (args[2].equals("add")) {
-						SkynetBot.db.addML(event.getChannel(), args[3]);
-						event.respond("New ML added to the channel. Access list updated.");
+						if (args.length == 5) {
+							SkynetBot.db.addML(event.getChannel(), args[3], args[4]);
+							event.respond("New ML added to the channel. Access list updated.");
+						} else {
+							event.respond("Syntax: $skynet ml add <user> <email>");
+						}
 					} else if (args[2].equals("remove")) {
-						SkynetBot.db.removeML(event.getChannel(), args[3]);
-						event.respond("ML Removed from channel. Access tokens revoked.");
+						if (args.length == 4) {
+							SkynetBot.db.removeML(event.getChannel(), args[3]);
+							event.respond("ML Removed from channel. Access tokens revoked.");
+						} else {
+							event.respond("Syntax: $skynet ml remove <user>");
+						}
 					} else if (args[2].equals("list")) {
 						Collection<String> mls = SkynetBot.db.mls.get(event.getChannel().getName());
 						if (mls == null || mls.isEmpty()) {
@@ -88,7 +96,7 @@ public class AdminCommandListener extends ListenerAdapter {
 							}
 						}
 					} else {
-						event.respond("Unknown badword action. Valid actions: add, remove, list");
+						event.respond("Unknown ml action. Valid actions: add, remove, list");
 					}
 				} else if (command.equals("shutdown")) {
 					event.respond("Shutting down...");
@@ -101,14 +109,14 @@ public class AdminCommandListener extends ListenerAdapter {
 			} else if (SkynetBot.db.mls.get(event.getChannel().getName()) != null && SkynetBot.db.mls.get(event.getChannel().getName()).contains(event.getUser().getNick().toLowerCase())) {
 				String command;
 				String[] args = message.split(" ");
-				
+
 				if (args.length <= 1) {
 					event.respond("You have failed to provide a command. Please remain where you are and await termination.");
 					return;
 				}
 
 				command = args[1].toLowerCase();
-				
+
 				if (command.equals("controls")) {
 					if (args[2].equals("auto")) {
 						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.AUTO);
@@ -147,7 +155,7 @@ public class AdminCommandListener extends ListenerAdapter {
 			}
 		}
 	}
-	
+
 	private void printAdminCommandList( MessageEvent event ) {
 		SkynetBot.bot.sendAction(event.getChannel(), "whispers something to " + event.getUser().getNick() + ". (Check for a new window or tab with the help text.)");
 
@@ -164,8 +172,7 @@ public class AdminCommandListener extends ListenerAdapter {
 							  "    $skynet ml remove <name> - Remove a name from the ML list for the current channel",
 							  "    $skynet ml list          - See the current list of MLs for current channel",
 							  "",
-							  "    $skynet shutdown        - Shut Skynet down",
-		};
+							  "    $skynet shutdown        - Shut Skynet down",};
 
 		for (int i = 0; i < helplines.length; ++i) {
 			SkynetBot.bot.sendNotice(event.getUser(), helplines[i]);

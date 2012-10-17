@@ -105,15 +105,16 @@ public class DBAccess {
 			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
 		}
 	}
-	
-	public void addML( Channel channel, String name ) {
+
+	public void addML( Channel channel, String name, String email ) {
 		Connection con;
 		try {
 			con = pool.getConnection(timeout);
 
-			PreparedStatement s = con.prepareStatement("INSERT INTO `channel_mls` SET `channel` = ?, `name` = ?");
+			PreparedStatement s = con.prepareStatement("INSERT INTO `channel_mls` SET `channel` = ?, `name` = ?, `email` = ?");
 			s.setString(1, channel.getName());
 			s.setString(2, name);
+			s.setString(2, email);
 			s.executeUpdate();
 
 			Collection<String> mllist = mls.get(channel.getName());
@@ -128,7 +129,7 @@ public class DBAccess {
 			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
 		}
 	}
-	
+
 	public void getAdminList() {
 		Connection con;
 		try {
@@ -157,7 +158,7 @@ public class DBAccess {
 
 			PreparedStatement s = con.prepareStatement("SELECT `channel`, `word` FROM `channel_badwords`");
 			s.executeQuery();
-			
+
 			ResultSet rs = s.getResultSet();
 			String channel;
 			String word;
@@ -178,7 +179,33 @@ public class DBAccess {
 			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
 		}
 	}
-	
+
+	public String getMLEmail( Channel channel, String user ) {
+		Connection con;
+		String email = null;
+
+		try {
+			con = pool.getConnection(timeout);
+
+			PreparedStatement s = con.prepareStatement("SELECT `email` FROM `channel_mls` WHERE `channel` = ? AND `name` = ?");
+			s.setString(1, channel.getName());
+			s.setString(2, user);
+			s.executeQuery();
+
+			ResultSet rs = s.getResultSet();
+
+			while (rs.next()) {
+				email = rs.getString("email");
+			}
+
+			con.close();
+		} catch (SQLException ex) {
+			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
+		}
+
+		return email;
+	}
+
 	public void getMLs() {
 		Connection con;
 		try {
@@ -186,7 +213,7 @@ public class DBAccess {
 
 			PreparedStatement s = con.prepareStatement("SELECT `channel`, `name` FROM `channel_mls`");
 			s.executeQuery();
-			
+
 			ResultSet rs = s.getResultSet();
 			String channel;
 			String name;
@@ -207,7 +234,7 @@ public class DBAccess {
 			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
 		}
 	}
-	
+
 	public void getChannelList() {
 		Connection con;
 		ChannelInfo ci;
@@ -225,7 +252,7 @@ public class DBAccess {
 			while (rs.next()) {
 				channel = SkynetBot.bot.getChannel(rs.getString("channel"));
 				control_mode = ChannelInfo.ControlMode.values()[rs.getInt("control_mode")];
-				
+
 				ci = new ChannelInfo(channel, control_mode);
 
 				this.channel_data.put(channel.getName(), ci);
@@ -253,9 +280,9 @@ public class DBAccess {
 			ResultSet rs = s.getResultSet();
 			while (rs.next()) {
 				DateTime dateTime = format.parseDateTime(rs.getString("last_seen"));
-				
+
 				Duration duration = new Duration(dateTime, new DateTime());
-				
+
 				if (duration.getStandardMinutes() < 120) {
 					last = "Resistance member " + user + " was last seen " + duration.getStandardMinutes() + " minutes ago. Surveillance is ongoing.";
 				} else if (duration.getStandardHours() < 48) {
@@ -273,7 +300,7 @@ public class DBAccess {
 
 		return last;
 	}
-	
+
 	public String getSetting( String key ) {
 		Connection con;
 		String value = "";
@@ -325,7 +352,7 @@ public class DBAccess {
 			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
 		}
 	}
-	
+
 	public void removeML( Channel channel, String ml ) {
 		Connection con;
 		try {
@@ -340,13 +367,13 @@ public class DBAccess {
 			if (mllist != null) {
 				mllist.remove(ml);
 			}
-			
+
 			con.close();
 		} catch (SQLException ex) {
 			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
 		}
 	}
-	
+
 	public void saveChannel( Channel channel ) {
 		Connection con;
 		try {
@@ -385,12 +412,12 @@ public class DBAccess {
 			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
 		}
 	}
-	
-	public void updateUser ( User user, Channel channel ) {
+
+	public void updateUser( User user, Channel channel ) {
 		Connection con;
 		try {
 			con = pool.getConnection(timeout);
-			
+
 			PreparedStatement s = con.prepareStatement("INSERT INTO `users` (name, channel, last_seen) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE last_seen = NOW()");
 			s.setString(1, user.getNick());
 			s.setString(2, channel.getName());
