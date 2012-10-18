@@ -14,8 +14,18 @@ package SkynetBot;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayDeque;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+import javax.mail.Session;
+import javax.mail.Transport;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 import org.pircbotx.Channel;
 import org.pircbotx.User;
 import org.pircbotx.hooks.ListenerAdapter;
@@ -29,7 +39,7 @@ import org.pircbotx.hooks.events.MessageEvent;
  * @author Matthew Walker
  */
 public class ServerListener extends ListenerAdapter {
-	protected HashMap<String, ArrayDeque<String>> channel_logs = new HashMap<String, ArrayDeque<String>>();
+	static protected HashMap<String, ArrayDeque<String>> channel_logs = new HashMap<String, ArrayDeque<String>>();
 
 	@Override
 	public void onInvite( InviteEvent event ) {
@@ -85,7 +95,10 @@ public class ServerListener extends ListenerAdapter {
 	}
 
 	protected void handleViolation( Channel channel, User user, String word ) {
+		Date date = new Date();
 		ChannelInfo info = SkynetBot.db.channel_data.get(channel.getName());
+		boolean banned = false;
+		int banLength = 0;
 
 		if (info.control == ChannelInfo.ControlMode.AUTO) {
 			for (User check : channel.getUsers()) {
@@ -99,31 +112,84 @@ public class ServerListener extends ListenerAdapter {
 
 		if (info.control == ChannelInfo.ControlMode.AUTO || info.control == ChannelInfo.ControlMode.ALWAYS) {
 			if (warning_count >= 3) {
+				banned = true;
 				SkynetBot.db.banUser(user, channel);
 
 				int currentLevel = SkynetBot.db.getBanLevel(user, channel);
-				int banLength = (int) Math.pow(2, currentLevel);
+				banLength = (int) Math.pow(2, currentLevel);
 
-				SkynetBot.bot.sendMessage(channel, user.getNick() + ": You have exceeded the warning limit for violations! You have been banned for " + banLength + " hours. This incident has been reported to your local ML.");
+				String message = user.getNick() + ": You have exceeded the warning limit for violations! You have been banned for " + banLength + " hours. This incident has been reported to your local ML.";
+				SkynetBot.bot.sendMessage(channel, message);
+				updateLog(channel, SkynetBot.bot.getUserBot(), message, date.getTime());
 				SkynetBot.bot.sendRawLine("CHANSERV KICK " + channel.getName() + " " + user.getNick() + " Exceeded the warning threshold.");
 			} else {
-				SkynetBot.bot.sendMessage(channel, user.getNick() + ": WARNING! You have violated the policies of this channel! Please cease using the word '" + word + "' to avoid termination! You have " + warning_count + " warnings on file. 1 warning is removed every 24 hours you go without being warned again. 3 warnings results in a temporary ban from this channel. This incident has been reported to your local ML.");
+				String message = user.getNick() + ": WARNING! You have violated the policies of this channel! Please cease using the word '" + word + "' to avoid termination! You have " + warning_count + " warnings on file. 1 warning is removed every 24 hours you go without being warned again. 3 warnings results in a temporary ban from this channel. This incident has been reported to your local ML.";
+				SkynetBot.bot.sendMessage(channel, message);
+				updateLog(channel, SkynetBot.bot.getUserBot(), message, date.getTime());
 			}
 		} else if (info.control == ChannelInfo.ControlMode.OFF) {
 			return;
 		}
 
 		if (info.control == ChannelInfo.ControlMode.LOGONLY) {
-			SkynetBot.bot.sendMessage(channel, user.getNick() + ": WARNING! You have violated the policies of this channel! Please cease using the word '" + word + "' to avoid termination! This incident has been reported to your local ML.");
+			String message = user.getNick() + ": WARNING! You have violated the policies of this channel! Please cease using the word '" + word + "' to avoid termination! This incident has been reported to your local ML.";
+			SkynetBot.bot.sendMessage(channel, message);
+			updateLog(channel, SkynetBot.bot.getUserBot(), message, date.getTime());
 		}
 		
-		String[] logLines = channel_logs.get(channel.getName()).toArray(new String[0]);
-		for (String line : logLines) {
-			SkynetBot.bot.log(line);
-		}
+		sendLog(channel, user, word, banned, banLength);
 	}
 
-	protected void updateLog( Channel channel, User user, String message, double timestamp ) {
+	protected void sendLog( Channel channel, User user, String word, boolean banned, int banLength ) {
+		ChannelInfo info = SkynetBot.db.channel_data.get(channel.getName());
+
+		String from = "Skynet Bot <mwalker+nanowrimo@kydance.net>";
+		String host = "localhost";
+		
+		Properties properties = System.getProperties();
+		properties.setProperty("mail.smtp.host", host);
+		
+		Session session = Session.getDefaultInstance(properties);
+		
+		try {
+			MimeMessage message = new MimeMessage(session);
+			message.setFrom(new InternetAddress(from));
+			
+			for (String ml : info.mls) {
+				message.addRecipient(Message.RecipientType.TO, new InternetAddress(SkynetBot.db.getMLEmail(channel, ml)));
+			}
+			message.addRecipient(Message.RecipientType.CC, new InternetAddress("Matthew Walker <mwalker+nanowrimo@kydance.net>"));
+			
+			if (info.control == ChannelInfo.ControlMode.LOGONLY) {
+				message.setSubject("Channel Log from Skynet");
+			} else {
+				message.setSubject("Action Report from Skynet");
+			}
+			
+			String body;
+
+			if (banned) {
+				body = "The user '" + user.getNick() + "' was banned from your channel, for a period of " + banLength + " hours, for exceeding the warning threshold of 3. Their violation was using the banned word '" + word + "'.\n\n";
+			} else {
+				body = "The user '" + user.getNick() + "' has recieved a warning. Their violation was using the banned word '" + word + "'.\n\n";
+			}
+			
+			body += "Here is the activity leading up to the event in question:\n\n";
+
+			String[] logLines = channel_logs.get(channel.getName()).toArray(new String[0]);
+			for (String line : logLines) {
+				body += line + "\n";
+			}
+
+			message.setText(body);
+			
+			Transport.send(message);
+		} catch (MessagingException ex) {
+			Logger.getLogger(ServerListener.class.getName()).log(Level.SEVERE, null, ex);
+		}
+	}
+	
+	public static void updateLog( Channel channel, User user, String message, double timestamp ) {
 		String timestampedMessage;
 		SimpleDateFormat dateFormatter = new SimpleDateFormat("HH:mm:ss");
 
