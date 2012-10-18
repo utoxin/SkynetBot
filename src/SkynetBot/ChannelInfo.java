@@ -12,6 +12,7 @@
  */
 package SkynetBot;
 
+import java.util.ArrayList;
 import org.pircbotx.Channel;
 
 /**
@@ -21,9 +22,10 @@ import org.pircbotx.Channel;
 public class ChannelInfo {
 	public Channel channel;
 	public ControlMode control;
+	public ArrayList<String> mls;
 
 	public enum ControlMode {
-		AUTO, ALWAYS, OFF
+		AUTO, ALWAYS, OFF, LOGONLY
 	}
 
 	/**
@@ -34,10 +36,18 @@ public class ChannelInfo {
 	public ChannelInfo( Channel channel ) {
 		this.channel = channel;
 		this.control = ControlMode.AUTO;
+
+		loadMLs();
 	}
 
-	public ChannelInfo ( Channel channel, ControlMode mode ) {
+	public ChannelInfo( Channel channel, ControlMode mode ) {
 		this.channel = channel;
 		this.control = mode;
+
+		loadMLs();
+	}
+
+	private void loadMLs() {
+		mls = (ArrayList<String>) SkynetBot.db.mls.get(this.channel.getName());
 	}
 }

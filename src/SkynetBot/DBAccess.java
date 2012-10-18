@@ -455,9 +455,9 @@ public class DBAccess {
 
 	public void refreshDbLists() {
 		this.getAdminList();
-		this.getChannelList();
 		this.getBadwords();
 		this.getMLs();
+		this.getChannelList();
 	}
 
 	public void removeBadword( Channel channel, String word ) {

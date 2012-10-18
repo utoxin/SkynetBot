@@ -84,17 +84,45 @@ public class ServerListener extends ListenerAdapter {
 		}
 	}
 
-	protected void handleViolation(Channel channel, User user, String word) {
+	protected void handleViolation( Channel channel, User user, String word ) {
+		ChannelInfo info = SkynetBot.db.channel_data.get(channel.getName());
+
+		if (info.control == ChannelInfo.ControlMode.AUTO) {
+			for (User check : channel.getUsers()) {
+				if (info.mls.contains(check.getNick())) {
+					return;
+				}
+			}
+		}
+
 		int warning_count = SkynetBot.db.getWarningCount(user, channel, true);
 
-		if (warning_count >= 3) {
-			SkynetBot.bot.sendRawLine("CHANSERV KICK " + channel.getName() + " " + user.getNick() + " Exceeded the warning threshold.");
-			SkynetBot.db.banUser(user, channel);
-		} else {
-			SkynetBot.bot.sendMessage(channel, user.getNick() + ": WARNING! You have violated the policies of this channel! Please cease using the word '" + word + "' to avoid termination! You have " + warning_count + " warnings on file. 1 warning is removed every 24 hours you go without being warned again. 3 warnings results in a temporary ban from this channel.");
+		if (info.control == ChannelInfo.ControlMode.AUTO || info.control == ChannelInfo.ControlMode.ALWAYS) {
+			if (warning_count >= 3) {
+				SkynetBot.db.banUser(user, channel);
+
+				int currentLevel = SkynetBot.db.getBanLevel(user, channel);
+				int banLength = (int) Math.pow(2, currentLevel);
+
+				SkynetBot.bot.sendMessage(channel, user.getNick() + ": You have exceeded the warning limit for violations! You have been banned for " + banLength + " hours. This incident has been reported to your local ML.");
+				SkynetBot.bot.sendRawLine("CHANSERV KICK " + channel.getName() + " " + user.getNick() + " Exceeded the warning threshold.");
+			} else {
+				SkynetBot.bot.sendMessage(channel, user.getNick() + ": WARNING! You have violated the policies of this channel! Please cease using the word '" + word + "' to avoid termination! You have " + warning_count + " warnings on file. 1 warning is removed every 24 hours you go without being warned again. 3 warnings results in a temporary ban from this channel. This incident has been reported to your local ML.");
+			}
+		} else if (info.control == ChannelInfo.ControlMode.OFF) {
+			return;
+		}
+
+		if (info.control == ChannelInfo.ControlMode.LOGONLY) {
+			SkynetBot.bot.sendMessage(channel, user.getNick() + ": WARNING! You have violated the policies of this channel! Please cease using the word '" + word + "' to avoid termination! This incident has been reported to your local ML.");
+		}
+		
+		String[] logLines = channel_logs.get(channel.getName()).toArray(new String[0]);
+		for (String line : logLines) {
+			SkynetBot.bot.log(line);
 		}
 	}
-	
+
 	protected void updateLog( Channel channel, User user, String message, double timestamp ) {
 		String timestampedMessage;
 		SimpleDateFormat dateFormatter = new SimpleDateFormat("HH:mm:ss");

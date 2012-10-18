@@ -45,8 +45,10 @@ public class AdminCommandListener extends ListenerAdapter {
 						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.ALWAYS);
 					} else if (args[2].equals("off")) {
 						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.OFF);
+					} else if (args[2].equals("logonly")) {
+						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.LOGONLY);
 					} else {
-						event.respond("Unknown control mode. Valid modes: auto, always, off");
+						event.respond("Unknown control mode. Valid modes: logonly, auto, always, off");
 					}
 
 					event.respond("Channel control mode set.");
@@ -161,17 +163,18 @@ public class AdminCommandListener extends ListenerAdapter {
 		SkynetBot.bot.sendAction(event.getChannel(), "whispers something to " + event.getUser().getNick() + ". (Check for a new window or tab with the help text.)");
 
 		String[] helplines = {"Core Skynet Admin Commands:",
-							  "    $skynet controls auto   - Turns on channel control mode when no other ops present",
-							  "    $skynet controls always - Turns on channel control mode all the time",
-							  "    $skynet controls off    - Turns off channel control mode",
+							  "    $skynet controls auto    - Turns on channel control mode when no other ops present",
+							  "    $skynet controls always  - Turns on channel control mode all the time",
+							  "    $skynet controls logonly - Only log events, don't issue warnings or bans",
+							  "    $skynet controls off     - Turns off channel control mode",
 							  "",
 							  "    $skynet badword add <word>    - Add a word to the banned list for the current channel",
 							  "    $skynet badword remove <word> - Remove a word from the banned list for the current channel",
 							  "    $skynet badword list          - See the current list of banned words for current channel",
 							  "",
-							  "    $skynet ml add <name>    - Add a name to the ML list for the current channel",
-							  "    $skynet ml remove <name> - Remove a name from the ML list for the current channel",
-							  "    $skynet ml list          - See the current list of MLs for current channel",
+							  "    $skynet ml add <nick> <email> - Add a nick to the ML list for the current channel",
+							  "    $skynet ml remove <nick>      - Remove a nick from the ML list for the current channel",
+							  "    $skynet ml list               - See the current list of MLs for current channel",
 							  "",
 							  "    $skynet shutdown        - Shut Skynet down",};
 
