@@ -12,6 +12,7 @@
  */
 package SkynetBot;
 
+import java.util.Collection;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -60,6 +61,20 @@ public class UserCommandListener extends ListenerAdapter  {
 				
 				sendLog(event.getChannel(), event.getUser(), reason);
 				event.respond("Thank you, informant! Your information is invaluable. This will be taken into consideration when it is time for your termination.");
+			} else if (command.equals("badword")) {
+				if (args[2].equals("list")) {
+					Collection<String> words = SkynetBot.db.badwords.get(event.getChannel().getName());
+					if (words == null || words.isEmpty()) {
+						event.respond("No record exists of banned words for this channel.");
+					} else {
+						event.respond("Transmitting banned word list now... (May appear in another tab or window)");
+						for (String word : words) {
+							SkynetBot.bot.sendNotice(event.getUser(), word);
+						}
+					}
+				} else {
+					event.respond("Unknown badword action. Valid actions: list");
+				}
 			} else if (command.equals("help")) {
 				printCommandList(event);
 			} else {
@@ -72,6 +87,7 @@ public class UserCommandListener extends ListenerAdapter  {
 		SkynetBot.bot.sendAction(event.getChannel(), "whispers something to " + event.getUser().getNick() + ". (Check for a new window or tab with the help text.)");
 
 		String[] helplines = {"Core Skynet User Commands:",
+							  "    !skynet badword list      - View the list of banned words",
 							  "    !skynet lastseen <user>   - Report when that user was last seen in channel",
 							  "    !skynet report [<reason>] - Send last 25 lines of history to ML, with an optional reason",};
 
