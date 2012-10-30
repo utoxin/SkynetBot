@@ -83,12 +83,14 @@ public class ServerListener extends ListenerAdapter {
 
 	protected void checkMessage( Channel channel, User user, String message ) {
 		if (!user.getNick().equals("Timmy") && SkynetBot.db.badwords.get(channel.getName()) != null) {
-			for (String word : SkynetBot.db.badwords.get(channel.getName())) {
-				Pattern pattern = SkynetBot.db.badwordPatterns.get(word);
+			if (SkynetBot.db.badwords.get(channel.getName()) != null) {
+				for (String word : SkynetBot.db.badwords.get(channel.getName())) {
+					Pattern pattern = SkynetBot.db.badwordPatterns.get(word);
 
-				if (pattern.matcher(message).find()) {
-					handleViolation(channel, user, word);
-					break;
+					if (pattern.matcher(message).find()) {
+						handleViolation(channel, user, word);
+						break;
+					}
 				}
 			}
 		}
@@ -102,7 +104,7 @@ public class ServerListener extends ListenerAdapter {
 
 		if (info.control == ChannelInfo.ControlMode.AUTO) {
 			for (User check : channel.getUsers()) {
-				if (info.mls.contains(check.getNick())) {
+				if (info.mls != null && info.mls.contains(check.getNick())) {
 					return;
 				}
 			}

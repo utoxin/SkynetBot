@@ -12,7 +12,10 @@
  */
 package SkynetBot;
 
+import java.io.IOException;
 import java.util.Collection;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.pircbotx.Colors;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.MessageEvent;
@@ -101,6 +104,21 @@ public class AdminCommandListener extends ListenerAdapter {
 					} else {
 						event.respond("Unknown ml action. Valid actions: add, remove, list");
 					}
+				} else if (command.equals("reloadservices")) {
+					try {
+						event.respond("Attempting to restart services daemon...");
+						Runtime r = Runtime.getRuntime();
+						Process p = r.exec("ps aux | awk '/anope/ {print $2}' | head -1 | xargs sudo kill");
+						p.waitFor();
+						
+						p = r.exec("sudo -u anope /opt/services/bin/services");
+						p.waitFor();
+						event.respond("That should do it.");
+					} catch (InterruptedException ex) {
+						Logger.getLogger(AdminCommandListener.class.getName()).log(Level.SEVERE, null, ex);
+					} catch (IOException ex) {
+						Logger.getLogger(AdminCommandListener.class.getName()).log(Level.SEVERE, null, ex);
+					}
 				} else if (command.equals("shutdown")) {
 					event.respond("Shutting down...");
 					SkynetBot.bot.shutdown();
@@ -127,8 +145,10 @@ public class AdminCommandListener extends ListenerAdapter {
 						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.ALWAYS);
 					} else if (args[2].equals("off")) {
 						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.OFF);
+					} else if (args[2].equals("logonly")) {
+						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.LOGONLY);
 					} else {
-						event.respond("Unknown control mode. Valid modes: auto, always, off");
+						event.respond("Unknown control mode. Valid modes: logonly, auto, always, off");
 					}
 
 					event.respond("Channel control mode set.");
@@ -152,6 +172,10 @@ public class AdminCommandListener extends ListenerAdapter {
 					} else {
 						event.respond("Unknown badword action. Valid actions: add, remove, list");
 					}
+				} else if (command.equals("help")) {
+					printAdminCommandList(event);
+				} else {
+					event.respond("$skynet " + command + " NOT FOUND. Read $skynet help to avoid termination!");
 				}
 			} else {
 				event.respond("Access denied. Your termination schedule has been moved up by one week.");
