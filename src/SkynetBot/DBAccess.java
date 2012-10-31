@@ -91,19 +91,19 @@ public class DBAccess {
 			con = pool.getConnection(timeout);
 
 			PreparedStatement s = con.prepareStatement("INSERT INTO `channel_badwords` SET `channel` = ?, `word` = ?");
-			s.setString(1, channel.getName());
-			s.setString(2, word);
+			s.setString(1, channel.getName().toLowerCase());
+			s.setString(2, word.toLowerCase());
 			s.executeUpdate();
 
-			Collection<String> words = badwords.get(channel.getName());
+			Collection<String> words = badwords.get(channel.getName().toLowerCase());
 			if (words == null) {
 				words = new ArrayList<String>();
-				badwords.put(channel.getName(), words);
+				badwords.put(channel.getName().toLowerCase(), words);
 			}
-			words.add(word);
+			words.add(word.toLowerCase());
 
-			if (badwordPatterns.get(word) == null) {
-				badwordPatterns.put(word, Pattern.compile("(?ui)(?:\\W|\\b)" + Pattern.quote(word) + "(?:\\W|\\b)"));
+			if (badwordPatterns.get(word.toLowerCase()) == null) {
+				badwordPatterns.put(word.toLowerCase(), Pattern.compile("(?ui)(?:\\W|\\b)" + Pattern.quote(word.toLowerCase()) + "(?:\\W|\\b)"));
 			}
 
 			con.close();
@@ -118,17 +118,17 @@ public class DBAccess {
 			con = pool.getConnection(timeout);
 
 			PreparedStatement s = con.prepareStatement("INSERT INTO `channel_mls` SET `channel` = ?, `name` = ?, `email` = ?");
-			s.setString(1, channel.getName());
-			s.setString(2, name);
-			s.setString(2, email);
+			s.setString(1, channel.getName().toLowerCase());
+			s.setString(2, name.toLowerCase());
+			s.setString(3, email.toLowerCase());
 			s.executeUpdate();
 
-			Collection<String> mllist = mls.get(channel.getName());
+			Collection<String> mllist = mls.get(channel.getName().toLowerCase());
 			if (mllist == null) {
 				mllist = new ArrayList<String>();
-				mls.put(channel.getName(), mllist);
+				mls.put(channel.getName().toLowerCase(), mllist);
 			}
-			mllist.add(name);
+			mllist.add(name.toLowerCase());
 
 			con.close();
 		} catch (SQLException ex) {
@@ -172,8 +172,8 @@ public class DBAccess {
 			badwords.clear();
 			badwordPatterns.clear();
 			while (rs.next()) {
-				channel = rs.getString("channel");
-				word = rs.getString("word");
+				channel = rs.getString("channel").toLowerCase();
+				word = rs.getString("word").toLowerCase();
 
 				Collection<String> words = badwords.get(channel);
 				if (words == null) {
@@ -201,14 +201,14 @@ public class DBAccess {
 			con = pool.getConnection(timeout);
 
 			PreparedStatement s = con.prepareStatement("SELECT `email` FROM `channel_mls` WHERE `channel` = ? AND `name` = ?");
-			s.setString(1, channel.getName());
-			s.setString(2, user);
+			s.setString(1, channel.getName().toLowerCase());
+			s.setString(2, user.toLowerCase());
 			s.executeQuery();
 
 			ResultSet rs = s.getResultSet();
 
 			while (rs.next()) {
-				email = rs.getString("email");
+				email = rs.getString("email").toLowerCase();
 			}
 
 			con.close();
@@ -231,8 +231,8 @@ public class DBAccess {
 			String channel;
 			String name;
 			while (rs.next()) {
-				channel = rs.getString("channel");
-				name = rs.getString("name");
+				channel = rs.getString("channel").toLowerCase();
+				name = rs.getString("name").toLowerCase();
 
 				Collection<String> mllist = mls.get(channel);
 				if (mllist == null) {
@@ -263,7 +263,7 @@ public class DBAccess {
 			ResultSet rs = s.executeQuery("SELECT * FROM `channels`");
 
 			while (rs.next()) {
-				channel = SkynetBot.bot.getChannel(rs.getString("channel"));
+				channel = SkynetBot.bot.getChannel(rs.getString("channel").toLowerCase());
 				control_mode = ChannelInfo.ControlMode.values()[rs.getInt("control_mode")];
 
 				ci = new ChannelInfo(channel, control_mode);
@@ -286,8 +286,8 @@ public class DBAccess {
 			con = pool.getConnection(timeout);
 
 			PreparedStatement s = con.prepareStatement("SELECT `last_seen` FROM `users` WHERE `name` = ? AND `channel` = ?");
-			s.setString(1, user);
-			s.setString(2, channel.getName());
+			s.setString(1, user.toLowerCase());
+			s.setString(2, channel.getName().toLowerCase());
 			s.executeQuery();
 
 			ResultSet rs = s.getResultSet();
@@ -347,8 +347,8 @@ public class DBAccess {
 			con = pool.getConnection(timeout);
 			
 			s = con.prepareStatement("SELECT `ban_level` FROM `users` WHERE `name` = ? AND `channel` = ?");
-			s.setString(1, user.getNick());
-			s.setString(2, channel.getName());
+			s.setString(1, user.getNick().toLowerCase());
+			s.setString(2, channel.getName().toLowerCase());
 			s.executeQuery();
 
 			ResultSet rs = s.getResultSet();
@@ -378,8 +378,8 @@ public class DBAccess {
 			s.setInt(1, currentLevel);
 			s.setInt(2, (int) Math.pow(2, currentLevel));
 			s.setInt(3, (int) Math.pow(2, currentLevel));
-			s.setString(4, user.getNick());
-			s.setString(5, channel.getName());
+			s.setString(4, user.getNick().toLowerCase());
+			s.setString(5, channel.getName().toLowerCase());
 			s.executeUpdate();
 
 			con.close();
@@ -400,8 +400,8 @@ public class DBAccess {
 			s.executeUpdate();
 
 			s = con.prepareStatement("SELECT `ban_level` FROM `users` WHERE `name` = ? AND `channel` = ? AND ban_ends > NOW()");
-			s.setString(1, user.getNick());
-			s.setString(2, channel.getName());
+			s.setString(1, user.getNick().toLowerCase());
+			s.setString(2, channel.getName().toLowerCase());
 			s.executeQuery();
 
 			ResultSet rs = s.getResultSet();
@@ -430,14 +430,14 @@ public class DBAccess {
 
 			if (newWarning) {
 				s = con.prepareStatement("UPDATE `users` SET `warnings` = `warnings` + 1, last_warning = NOW() WHERE `name` = ? AND `channel` = ?");
-				s.setString(1, user.getNick());
-				s.setString(2, channel.getName());
+				s.setString(1, user.getNick().toLowerCase());
+				s.setString(2, channel.getName().toLowerCase());
 				s.executeUpdate();
 			}
 
 			s = con.prepareStatement("SELECT `warnings` FROM `users` WHERE `name` = ? AND `channel` = ?");
-			s.setString(1, user.getNick());
-			s.setString(2, channel.getName());
+			s.setString(1, user.getNick().toLowerCase());
+			s.setString(2, channel.getName().toLowerCase());
 			s.executeQuery();
 
 			ResultSet rs = s.getResultSet();
@@ -466,13 +466,13 @@ public class DBAccess {
 			con = pool.getConnection(timeout);
 
 			PreparedStatement s = con.prepareStatement("DELETE FROM `channel_badwords` WHERE `channel` = ? AND `word` = ?");
-			s.setString(1, channel.getName());
-			s.setString(2, word);
+			s.setString(1, channel.getName().toLowerCase());
+			s.setString(2, word.toLowerCase());
 			s.executeUpdate();
 
-			Collection<String> words = badwords.get(channel.getName());
+			Collection<String> words = badwords.get(channel.getName().toLowerCase());
 			if (words != null) {
-				words.remove(word);
+				words.remove(word.toLowerCase());
 			}
 
 			con.close();
@@ -487,13 +487,13 @@ public class DBAccess {
 			con = pool.getConnection(timeout);
 
 			PreparedStatement s = con.prepareStatement("DELETE FROM `channel_mls` WHERE `channel` = ? AND `name` = ?");
-			s.setString(1, channel.getName());
-			s.setString(2, ml);
+			s.setString(1, channel.getName().toLowerCase());
+			s.setString(2, ml.toLowerCase());
 			s.executeUpdate();
 
-			Collection<String> mllist = mls.get(channel.getName());
+			Collection<String> mllist = mls.get(channel.getName().toLowerCase());
 			if (mllist != null) {
-				mllist.remove(ml);
+				mllist.remove(ml.toLowerCase());
 			}
 
 			con.close();
@@ -508,13 +508,13 @@ public class DBAccess {
 			con = pool.getConnection(timeout);
 
 			PreparedStatement s = con.prepareStatement("INSERT INTO `channels` (`channel`, `control_mode`) VALUES (?, 0)");
-			s.setString(1, channel.getName());
+			s.setString(1, channel.getName().toLowerCase());
 			s.executeUpdate();
 
-			if (!this.channel_data.containsKey(channel.getName())) {
+			if (!this.channel_data.containsKey(channel.getName().toLowerCase())) {
 				ChannelInfo new_channel = new ChannelInfo(channel);
 
-				this.channel_data.put(channel.getName(), new_channel);
+				this.channel_data.put(channel.getName().toLowerCase(), new_channel);
 			}
 
 			con.close();
@@ -530,10 +530,10 @@ public class DBAccess {
 
 			PreparedStatement s = con.prepareStatement("UPDATE `channels` SET control_mode = ? WHERE `channel` = ?");
 			s.setInt(1, control_mode.ordinal());
-			s.setString(2, channel.getName());
+			s.setString(2, channel.getName().toLowerCase());
 			s.executeUpdate();
 
-			this.channel_data.get(channel.getName()).control = control_mode;
+			this.channel_data.get(channel.getName().toLowerCase()).control = control_mode;
 
 			con.close();
 		} catch (SQLException ex) {
@@ -547,8 +547,8 @@ public class DBAccess {
 			con = pool.getConnection(timeout);
 
 			PreparedStatement s = con.prepareStatement("INSERT INTO `users` (name, channel, last_seen) VALUES (?, ?, NOW()) ON DUPLICATE KEY UPDATE last_seen = NOW()");
-			s.setString(1, user.getNick());
-			s.setString(2, channel.getName());
+			s.setString(1, user.getNick().toLowerCase());
+			s.setString(2, channel.getName().toLowerCase());
 			s.executeUpdate();
 
 			con.close();

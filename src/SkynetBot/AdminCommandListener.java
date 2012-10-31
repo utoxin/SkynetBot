@@ -28,9 +28,16 @@ public class AdminCommandListener extends ListenerAdapter {
 	@Override
 	public void onMessage( MessageEvent event ) {
 		String message = Colors.removeFormattingAndColors(event.getMessage());
+		int userType = 0;
+		
+		if (SkynetBot.db.admin_list.contains(event.getUser().getNick().toLowerCase())) {
+			userType = 1;
+		} else if (SkynetBot.db.mls.get(event.getChannel().getName().toLowerCase()) != null && SkynetBot.db.mls.get(event.getChannel().getName().toLowerCase()).contains(event.getUser().getNick().toLowerCase())) {
+			userType = 2;
+		}
 
 		if (message.startsWith("$skynet")) {
-			if (SkynetBot.db.admin_list.contains(event.getUser().getNick().toLowerCase())) {
+			if (userType > 0) {
 				String command;
 				String[] args = message.split(" ");
 
@@ -104,7 +111,7 @@ public class AdminCommandListener extends ListenerAdapter {
 					} else {
 						event.respond("Unknown ml action. Valid actions: add, remove, list");
 					}
-				} else if (command.equals("reloadservices")) {
+				} else if (userType == 1 && command.equals("reloadservices")) {
 					try {
 						event.respond("Attempting to restart services daemon...");
 						Runtime r = Runtime.getRuntime();
@@ -119,59 +126,13 @@ public class AdminCommandListener extends ListenerAdapter {
 					} catch (IOException ex) {
 						Logger.getLogger(AdminCommandListener.class.getName()).log(Level.SEVERE, null, ex);
 					}
-				} else if (command.equals("shutdown")) {
+				} else if (userType == 1 && command.equals("reload")) {
+					event.respond("Restoring memory banks from secure backup...");
+					SkynetBot.db.refreshDbLists();
+					event.respond("Data integrity verified. System active.");
+				} else if (userType == 1 && command.equals("shutdown")) {
 					event.respond("Shutting down...");
 					SkynetBot.bot.shutdown();
-				} else if (command.equals("help")) {
-					printAdminCommandList(event);
-				} else {
-					event.respond("$skynet " + command + " NOT FOUND. Read $skynet help to avoid termination!");
-				}
-			} else if (SkynetBot.db.mls.get(event.getChannel().getName()) != null && SkynetBot.db.mls.get(event.getChannel().getName()).contains(event.getUser().getNick().toLowerCase())) {
-				String command;
-				String[] args = message.split(" ");
-
-				if (args.length <= 1) {
-					event.respond("You have failed to provide a command. Please remain where you are and await termination.");
-					return;
-				}
-
-				command = args[1].toLowerCase();
-
-				if (command.equals("controls")) {
-					if (args[2].equals("auto")) {
-						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.AUTO);
-					} else if (args[2].equals("always")) {
-						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.ALWAYS);
-					} else if (args[2].equals("off")) {
-						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.OFF);
-					} else if (args[2].equals("logonly")) {
-						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.LOGONLY);
-					} else {
-						event.respond("Unknown control mode. Valid modes: logonly, auto, always, off");
-					}
-
-					event.respond("Channel control mode set.");
-				} else if (command.equals("badword")) {
-					if (args[2].equals("add")) {
-						SkynetBot.db.addBadword(event.getChannel(), args[3]);
-						event.respond("New word added to banned list. Now scanning for violations...");
-					} else if (args[2].equals("remove")) {
-						SkynetBot.db.removeBadword(event.getChannel(), args[3]);
-						event.respond("Word removed from ban list. Ceasing scan...");
-					} else if (args[2].equals("list")) {
-						Collection<String> words = SkynetBot.db.badwords.get(event.getChannel().getName());
-						if (words == null || words.isEmpty()) {
-							event.respond("No record exists of banned words for this channel.");
-						} else {
-							event.respond("Transmitting banned word list now... (May appear in another tab or window)");
-							for (String word : words) {
-								SkynetBot.bot.sendNotice(event.getUser(), word);
-							}
-						}
-					} else {
-						event.respond("Unknown badword action. Valid actions: add, remove, list");
-					}
 				} else if (command.equals("help")) {
 					printAdminCommandList(event);
 				} else {
