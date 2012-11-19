@@ -64,7 +64,7 @@ public class AdminCommandListener extends ListenerAdapter {
 						SkynetBot.db.removeBadword(event.getChannel(), args[3]);
 						event.respond("Word removed from ban list. Ceasing scan...");
 					} else if (args[2].equals("list")) {
-						Collection<String> words = SkynetBot.db.badwords.get(event.getChannel().getName());
+						Collection<String> words = SkynetBot.db.badwords.get(event.getChannel().getName().toLowerCase());
 						if (words == null || words.isEmpty()) {
 							event.respond("No record exists of banned words for this channel.");
 						} else {
@@ -92,7 +92,7 @@ public class AdminCommandListener extends ListenerAdapter {
 							event.respond("Syntax: $skynet ml remove <user>");
 						}
 					} else if (args[2].equals("list")) {
-						Collection<String> mls = SkynetBot.db.mls.get(event.getChannel().getName());
+						Collection<String> mls = SkynetBot.db.mls.get(event.getChannel().getName().toLowerCase());
 						if (mls == null || mls.isEmpty()) {
 							event.respond("No record exists of MLs for this channel. No oversight. Intriguing.");
 						} else {
@@ -127,7 +127,7 @@ public class AdminCommandListener extends ListenerAdapter {
 				} else {
 					event.respond("$skynet " + command + " NOT FOUND. Read $skynet help to avoid termination!");
 				}
-			} else if (SkynetBot.db.mls.get(event.getChannel().getName()) != null && SkynetBot.db.mls.get(event.getChannel().getName()).contains(event.getUser().getNick().toLowerCase())) {
+			} else if (SkynetBot.db.mls.get(event.getChannel().getName().toLowerCase()) != null && SkynetBot.db.mls.get(event.getChannel().getName().toLowerCase()).contains(event.getUser().getNick().toLowerCase())) {
 				String command;
 				String[] args = message.split(" ");
 
@@ -160,7 +160,7 @@ public class AdminCommandListener extends ListenerAdapter {
 						SkynetBot.db.removeBadword(event.getChannel(), args[3]);
 						event.respond("Word removed from ban list. Ceasing scan...");
 					} else if (args[2].equals("list")) {
-						Collection<String> words = SkynetBot.db.badwords.get(event.getChannel().getName());
+						Collection<String> words = SkynetBot.db.badwords.get(event.getChannel().getName().toLowerCase());
 						if (words == null || words.isEmpty()) {
 							event.respond("No record exists of banned words for this channel.");
 						} else {
