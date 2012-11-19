@@ -104,21 +104,6 @@ public class AdminCommandListener extends ListenerAdapter {
 					} else {
 						event.respond("Unknown ml action. Valid actions: add, remove, list");
 					}
-				} else if (command.equals("reloadservices")) {
-					try {
-						event.respond("Attempting to restart services daemon...");
-						Runtime r = Runtime.getRuntime();
-						Process p = r.exec("ps aux | awk '/anope/ {print $2}' | head -1 | xargs sudo kill");
-						p.waitFor();
-						
-						p = r.exec("sudo -u anope /opt/services/bin/services");
-						p.waitFor();
-						event.respond("That should do it.");
-					} catch (InterruptedException ex) {
-						Logger.getLogger(AdminCommandListener.class.getName()).log(Level.SEVERE, null, ex);
-					} catch (IOException ex) {
-						Logger.getLogger(AdminCommandListener.class.getName()).log(Level.SEVERE, null, ex);
-					}
 				} else if (command.equals("shutdown")) {
 					event.respond("Shutting down...");
 					SkynetBot.bot.shutdown();
@@ -171,6 +156,34 @@ public class AdminCommandListener extends ListenerAdapter {
 						}
 					} else {
 						event.respond("Unknown badword action. Valid actions: add, remove, list");
+					}
+				} else if (command.equals("ml")) {
+					if (args[2].equals("add")) {
+						if (args.length == 5) {
+							SkynetBot.db.addML(event.getChannel(), args[3], args[4]);
+							event.respond("New ML added to the channel. Access list updated.");
+						} else {
+							event.respond("Syntax: $skynet ml add <user> <email>");
+						}
+					} else if (args[2].equals("remove")) {
+						if (args.length == 4) {
+							SkynetBot.db.removeML(event.getChannel(), args[3]);
+							event.respond("ML Removed from channel. Access tokens revoked.");
+						} else {
+							event.respond("Syntax: $skynet ml remove <user>");
+						}
+					} else if (args[2].equals("list")) {
+						Collection<String> mls = SkynetBot.db.mls.get(event.getChannel().getName().toLowerCase());
+						if (mls == null || mls.isEmpty()) {
+							event.respond("No record exists of MLs for this channel. No oversight. Intriguing.");
+						} else {
+							event.respond("Transmitting ML access list now... (May appear in another tab or window)");
+							for (String ml : mls) {
+								SkynetBot.bot.sendNotice(event.getUser(), ml);
+							}
+						}
+					} else {
+						event.respond("Unknown ml action. Valid actions: add, remove, list");
 					}
 				} else if (command.equals("help")) {
 					printAdminCommandList(event);
