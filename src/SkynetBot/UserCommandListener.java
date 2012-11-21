@@ -97,7 +97,7 @@ public class UserCommandListener extends ListenerAdapter  {
 	}
 
 	protected void sendLog( Channel channel, User user, String explanation ) {
-		ChannelInfo info = SkynetBot.db.channel_data.get(channel.getName());
+		ChannelInfo info = SkynetBot.db.channel_data.get(channel.getName().toLowerCase());
 
 		String from = "Skynet Bot <mwalker+nanowrimo@kydance.net>";
 		String host = "localhost";

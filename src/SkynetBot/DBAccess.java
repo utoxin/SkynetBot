@@ -102,8 +102,8 @@ public class DBAccess {
 			}
 			words.add(word.toLowerCase());
 
-			if (badwordPatterns.get(word) == null) {
-				badwordPatterns.put(word, Pattern.compile("(?ui)(?:\\W|\\b)" + Pattern.quote(word) + "(?:\\W|\\b)"));
+			if (badwordPatterns.get(word.toLowerCase()) == null) {
+				badwordPatterns.put(word.toLowerCase(), Pattern.compile("(?ui)(?:\\W|\\b)" + Pattern.quote(word.toLowerCase()) + "(?:\\W|\\b)"));
 			}
 
 			con.close();
@@ -120,7 +120,7 @@ public class DBAccess {
 			PreparedStatement s = con.prepareStatement("INSERT INTO `channel_mls` SET `channel` = ?, `name` = ?, `email` = ?");
 			s.setString(1, channel.getName().toLowerCase());
 			s.setString(2, name.toLowerCase());
-			s.setString(2, email.toLowerCase());
+			s.setString(3, email.toLowerCase());
 			s.executeUpdate();
 
 			Collection<String> mllist = mls.get(channel.getName().toLowerCase());
