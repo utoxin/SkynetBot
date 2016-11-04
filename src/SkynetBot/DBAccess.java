@@ -40,15 +40,16 @@ import snaq.db.Select1Validator;
  *
  * @author Matthew Walker
  */
-public class DBAccess {
+class DBAccess {
 	private static DBAccess instance;
 	private long timeout = 3000;
-	protected ConnectionPool pool;
-	protected Set<String> admin_list = new HashSet<String>(16);
-	protected HashMap<String, ChannelInfo> channel_data = new HashMap<String, ChannelInfo>(62);
-	protected HashMap<String, Collection<String>> badwords = new HashMap<String, Collection<String>>();
-	protected HashMap<String, Pattern> badwordPatterns = new HashMap<String, Pattern>();
-	protected HashMap<String, Collection<String>> mls = new HashMap<String, Collection<String>>();
+	private ConnectionPool pool;
+
+	Set<String> admin_list = new HashSet<>(16);
+	HashMap<String, ChannelInfo> channel_data = new HashMap<String, ChannelInfo>();
+	HashMap<String, Collection<String>> badwords = new HashMap<>();
+	HashMap<String, Pattern> badwordPatterns = new HashMap<>();
+	HashMap<String, Collection<String>> mls = new HashMap<>();
 
 	static {
 		instance = new DBAccess();
@@ -57,10 +58,7 @@ public class DBAccess {
 	private DBAccess() {
 		Class c;
 		Driver driver;
-
-		/**
-		 * Make sure the JDBC driver is initialized. Used by the connection pool.
-		 */
+		
 		try {
 			c = Class.forName("com.mysql.jdbc.Driver");
 			driver = (Driver) c.newInstance();
@@ -81,11 +79,11 @@ public class DBAccess {
 	 *
 	 * @return Singleton
 	 */
-	public static DBAccess getInstance() {
+	static DBAccess getInstance() {
 		return instance;
 	}
 
-	public void addBadword( Channel channel, String word ) {
+	void addBadword(Channel channel, String word) {
 		Connection con;
 		try {
 			con = pool.getConnection(timeout);
@@ -97,14 +95,12 @@ public class DBAccess {
 
 			Collection<String> words = badwords.get(channel.getName().toLowerCase());
 			if (words == null) {
-				words = new ArrayList<String>();
+				words = new ArrayList<>();
 				badwords.put(channel.getName().toLowerCase(), words);
 			}
 			words.add(word.toLowerCase());
 
-			if (badwordPatterns.get(word.toLowerCase()) == null) {
-				badwordPatterns.put(word.toLowerCase(), Pattern.compile("(?ui)(?:\\W|\\b)" + Pattern.quote(word.toLowerCase()) + "(?:\\W|\\b)"));
-			}
+			badwordPatterns.putIfAbsent(word.toLowerCase(), Pattern.compile("(?ui)(?:\\W|\\b)" + Pattern.quote(word.toLowerCase()) + "(?:\\W|\\b)"));
 
 			con.close();
 		} catch (SQLException ex) {
@@ -112,7 +108,7 @@ public class DBAccess {
 		}
 	}
 
-	public void addML( Channel channel, String name, String email ) {
+	void addML(Channel channel, String name, String email) {
 		Connection con;
 		try {
 			con = pool.getConnection(timeout);
@@ -125,7 +121,7 @@ public class DBAccess {
 
 			Collection<String> mllist = mls.get(channel.getName().toLowerCase());
 			if (mllist == null) {
-				mllist = new ArrayList<String>();
+				mllist = new ArrayList<>();
 				mls.put(channel.getName().toLowerCase(), mllist);
 			}
 			mllist.add(name.toLowerCase());
@@ -136,7 +132,7 @@ public class DBAccess {
 		}
 	}
 
-	public void getAdminList() {
+	private void getAdminList() {
 		Connection con;
 		try {
 			con = pool.getConnection(timeout);
@@ -157,7 +153,7 @@ public class DBAccess {
 		}
 	}
 
-	public void getBadwords() {
+	private void getBadwords() {
 		Connection con;
 		try {
 			con = pool.getConnection(timeout);
@@ -177,14 +173,12 @@ public class DBAccess {
 
 				Collection<String> words = badwords.get(channel);
 				if (words == null) {
-					words = new ArrayList<String>();
+					words = new ArrayList<>();
 					badwords.put(channel, words);
 				}
 				words.add(word);
 
-				if (badwordPatterns.get(word) == null) {
-					badwordPatterns.put(word, Pattern.compile("(?ui)(?:\\W|\\b)" + Pattern.quote(word) + "(?:\\W|\\b)"));
-				}
+				badwordPatterns.putIfAbsent(word, Pattern.compile("(?ui)(?:\\W|\\b)" + Pattern.quote(word) + "(?:\\W|\\b)"));
 			}
 
 			con.close();
@@ -193,7 +187,7 @@ public class DBAccess {
 		}
 	}
 
-	public String getMLEmail( Channel channel, String user ) {
+	String getMLEmail(Channel channel, String user) {
 		Connection con;
 		String email = null;
 
@@ -219,7 +213,7 @@ public class DBAccess {
 		return email;
 	}
 
-	public void getMLs() {
+	private void getMLs() {
 		Connection con;
 		try {
 			con = pool.getConnection(timeout);
@@ -237,7 +231,7 @@ public class DBAccess {
 
 				Collection<String> mllist = mls.get(channel);
 				if (mllist == null) {
-					mllist = new ArrayList<String>();
+					mllist = new ArrayList<>();
 					mls.put(channel, mllist);
 				}
 				mllist.add(name);
@@ -249,7 +243,7 @@ public class DBAccess {
 		}
 	}
 
-	public void getChannelList() {
+	private void getChannelList() {
 		Connection con;
 		ChannelInfo ci;
 		Channel channel;
@@ -278,7 +272,7 @@ public class DBAccess {
 		}
 	}
 
-	public String getLastSeen( String user, Channel channel ) {
+	String getLastSeen(String user, Channel channel) {
 		Connection con;
 		String last = "No records found for a resistance member named " + user + ".";
 		DateTimeFormatter format = DateTimeFormat.forPattern("CCYY-MM-dd HH:mm:ss.S");
@@ -315,7 +309,7 @@ public class DBAccess {
 		return last;
 	}
 
-	public String getSetting( String key ) {
+	String getSetting(String key) {
 		Connection con;
 		String value = "";
 
@@ -339,7 +333,7 @@ public class DBAccess {
 		return value;
 	}
 
-	public int getBanLevel( User user, Channel channel ) {
+	int getBanLevel(User user, Channel channel) {
 		int level = 0;
 		Connection con;
 		PreparedStatement s;
@@ -365,7 +359,7 @@ public class DBAccess {
 		return level;
 	}
 
-	public void banUser( User user, Channel channel ) {
+	void banUser(User user, Channel channel) {
 		int currentLevel = getBanLevel(user, channel);
 		currentLevel++;
 
@@ -389,7 +383,7 @@ public class DBAccess {
 		}
 	}
 	
-	public boolean isUserBanned( User user, Channel channel ) {
+	boolean isUserBanned(User user, Channel channel) {
 		boolean banned = false;
 		Connection con;
 		PreparedStatement s;
@@ -418,7 +412,7 @@ public class DBAccess {
 		return banned;
 	}
 	
-	public int getWarningCount( User user, Channel channel, boolean newWarning ) {
+	int getWarningCount(User user, Channel channel, boolean newWarning) {
 		int level = 0;
 		Connection con;
 		PreparedStatement s;
@@ -454,14 +448,14 @@ public class DBAccess {
 		return level;
 	}
 
-	public void refreshDbLists() {
+	void refreshDbLists() {
 		this.getAdminList();
 		this.getBadwords();
 		this.getMLs();
 		this.getChannelList();
 	}
 
-	public void removeBadword( Channel channel, String word ) {
+	void removeBadword(Channel channel, String word) {
 		Connection con;
 		try {
 			con = pool.getConnection(timeout);
@@ -482,7 +476,7 @@ public class DBAccess {
 		}
 	}
 
-	public void removeML( Channel channel, String ml ) {
+	void removeML(Channel channel, String ml) {
 		Connection con;
 		try {
 			con = pool.getConnection(timeout);
@@ -503,7 +497,7 @@ public class DBAccess {
 		}
 	}
 
-	public void saveChannel( Channel channel ) {
+	void saveChannel(Channel channel) {
 		Connection con;
 		try {
 			con = pool.getConnection(timeout);
@@ -524,7 +518,7 @@ public class DBAccess {
 		}
 	}
 
-	public void setChannelControlMode( Channel channel, ChannelInfo.ControlMode control_mode ) {
+	void setChannelControlMode(Channel channel, ChannelInfo.ControlMode control_mode) {
 		Connection con;
 		try {
 			con = pool.getConnection(timeout);
@@ -542,7 +536,7 @@ public class DBAccess {
 		}
 	}
 
-	public void updateUser( User user, Channel channel ) {
+	void updateUser(User user, Channel channel) {
 		Connection con;
 		try {
 			con = pool.getConnection(timeout);

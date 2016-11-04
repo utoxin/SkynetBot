@@ -12,10 +12,7 @@
  */
 package SkynetBot;
 
-import java.io.IOException;
 import java.util.Collection;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.pircbotx.Colors;
 import org.pircbotx.hooks.ListenerAdapter;
 import org.pircbotx.hooks.events.MessageEvent;
@@ -24,9 +21,13 @@ import org.pircbotx.hooks.events.MessageEvent;
  *
  * @author Matthew Walker
  */
-public class AdminCommandListener extends ListenerAdapter {
+class AdminCommandListener extends ListenerAdapter {
 	@Override
 	public void onMessage( MessageEvent event ) {
+		if (event.getUser() == null) {
+			return;
+		}
+		
 		String message = Colors.removeFormattingAndColors(event.getMessage());
 		int userType = 0;
 		
@@ -49,67 +50,83 @@ public class AdminCommandListener extends ListenerAdapter {
 				command = args[1].toLowerCase();
 
 				if (command.equals("controls")) {
-					if (args[2].equals("auto")) {
-						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.AUTO);
-					} else if (args[2].equals("always")) {
-						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.ALWAYS);
-					} else if (args[2].equals("off")) {
-						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.OFF);
-					} else if (args[2].equals("logonly")) {
-						SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.LOGONLY);
-					} else {
-						event.respond("Unknown control mode. Valid modes: logonly, auto, always, off");
+					switch (args[2]) {
+						case "auto":
+							SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.AUTO);
+							break;
+						case "always":
+							SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.ALWAYS);
+							break;
+						case "off":
+							SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.OFF);
+							break;
+						case "logonly":
+							SkynetBot.db.setChannelControlMode(event.getChannel(), ChannelInfo.ControlMode.LOGONLY);
+							break;
+						default:
+							event.respond("Unknown control mode. Valid modes: logonly, auto, always, off");
+							break;
 					}
 
 					event.respond("Channel control mode set.");
 				} else if (command.equals("badword")) {
-					if (args[2].equals("add")) {
-						SkynetBot.db.addBadword(event.getChannel(), args[3]);
-						SkynetBot.bot.sendMessage(event.getChannel(), "$badword " + args[3]);
-						event.respond("New word added to banned list. Now scanning for violations...");
-					} else if (args[2].equals("remove")) {
-						SkynetBot.db.removeBadword(event.getChannel(), args[3]);
-						event.respond("Word removed from ban list. Ceasing scan...");
-					} else if (args[2].equals("list")) {
-						Collection<String> words = SkynetBot.db.badwords.get(event.getChannel().getName());
-						if (words == null || words.isEmpty()) {
-							event.respond("No record exists of banned words for this channel.");
-						} else {
-							event.respond("Transmitting banned word list now... (May appear in another tab or window)");
-							for (String word : words) {
-								SkynetBot.bot.sendNotice(event.getUser(), word);
+					switch (args[2]) {
+						case "add":
+							SkynetBot.db.addBadword(event.getChannel(), args[3]);
+							event.getChannel().send().message("$badword " + args[3]);
+							event.respond("New word added to banned list. Now scanning for violations...");
+							break;
+						case "remove":
+							SkynetBot.db.removeBadword(event.getChannel(), args[3]);
+							event.respond("Word removed from ban list. Ceasing scan...");
+							break;
+						case "list":
+							Collection<String> words = SkynetBot.db.badwords.get(event.getChannel().getName());
+							if (words == null || words.isEmpty()) {
+								event.respond("No record exists of banned words for this channel.");
+							} else {
+								event.respond("Transmitting banned word list now... (May appear in another tab or window)");
+								for (String word : words) {
+									event.getUser().send().notice(word);
+								}
 							}
-						}
-					} else {
-						event.respond("Unknown badword action. Valid actions: add, remove, list");
+							break;
+						default:
+							event.respond("Unknown badword action. Valid actions: add, remove, list");
+							break;
 					}
 				} else if (command.equals("ml")) {
-					if (args[2].equals("add")) {
-						if (args.length == 5) {
-							SkynetBot.db.addML(event.getChannel(), args[3], args[4]);
-							event.respond("New ML added to the channel. Access list updated.");
-						} else {
-							event.respond("Syntax: $skynet ml add <user> <email>");
-						}
-					} else if (args[2].equals("remove")) {
-						if (args.length == 4) {
-							SkynetBot.db.removeML(event.getChannel(), args[3]);
-							event.respond("ML Removed from channel. Access tokens revoked.");
-						} else {
-							event.respond("Syntax: $skynet ml remove <user>");
-						}
-					} else if (args[2].equals("list")) {
-						Collection<String> mls = SkynetBot.db.mls.get(event.getChannel().getName());
-						if (mls == null || mls.isEmpty()) {
-							event.respond("No record exists of MLs for this channel. No oversight. Intriguing.");
-						} else {
-							event.respond("Transmitting ML access list now... (May appear in another tab or window)");
-							for (String ml : mls) {
-								SkynetBot.bot.sendNotice(event.getUser(), ml);
+					switch (args[2]) {
+						case "add":
+							if (args.length == 5) {
+								SkynetBot.db.addML(event.getChannel(), args[3], args[4]);
+								event.respond("New ML added to the channel. Access list updated.");
+							} else {
+								event.respond("Syntax: $skynet ml add <user> <email>");
 							}
-						}
-					} else {
-						event.respond("Unknown ml action. Valid actions: add, remove, list");
+							break;
+						case "remove":
+							if (args.length == 4) {
+								SkynetBot.db.removeML(event.getChannel(), args[3]);
+								event.respond("ML Removed from channel. Access tokens revoked.");
+							} else {
+								event.respond("Syntax: $skynet ml remove <user>");
+							}
+							break;
+						case "list":
+							Collection<String> mls = SkynetBot.db.mls.get(event.getChannel().getName());
+							if (mls == null || mls.isEmpty()) {
+								event.respond("No record exists of MLs for this channel. No oversight. Intriguing.");
+							} else {
+								event.respond("Transmitting ML access list now... (May appear in another tab or window)");
+								for (String ml : mls) {
+									event.getUser().send().notice(ml);
+								}
+							}
+							break;
+						default:
+							event.respond("Unknown ml action. Valid actions: add, remove, list");
+							break;
 					}
 				} else if (userType == 1 && command.equals("reload")) {
 					event.respond("Restoring memory banks from secure backup...");
@@ -130,7 +147,11 @@ public class AdminCommandListener extends ListenerAdapter {
 	}
 
 	private void printAdminCommandList( MessageEvent event ) {
-		SkynetBot.bot.sendAction(event.getChannel(), "whispers something to " + event.getUser().getNick() + ". (Check for a new window or tab with the help text.)");
+		if (event.getUser() == null) {
+			 return;
+		}
+		
+		event.getChannel().send().action("whispers something to " + event.getUser().getNick() + ". (Check for a new window or tab with the help text.)");
 
 		String[] helplines = {"Core Skynet Admin Commands:",
 							  "    $skynet controls auto    - Turns on channel control mode when no other ops present",
@@ -148,8 +169,8 @@ public class AdminCommandListener extends ListenerAdapter {
 							  "",
 							  "    $skynet shutdown        - Shut Skynet down",};
 
-		for (int i = 0; i < helplines.length; ++i) {
-			SkynetBot.bot.sendNotice(event.getUser(), helplines[i]);
+		for (String helpline : helplines) {
+			event.getUser().send().notice(helpline);
 		}
 	}
 }

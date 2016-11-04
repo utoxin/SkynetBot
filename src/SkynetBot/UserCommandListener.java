@@ -32,9 +32,13 @@ import org.pircbotx.hooks.events.MessageEvent;
  *
  * @author Matthew Walker
  */
-public class UserCommandListener extends ListenerAdapter  {
+class UserCommandListener extends ListenerAdapter  {
 	@Override
 	public void onMessage( MessageEvent event ) {
+		if (event.getUser() == null) {
+			return;
+		}
+		
 		String message = Colors.removeFormattingAndColors(event.getMessage());
 
 		if (message.startsWith("!skynet")) {
@@ -47,56 +51,66 @@ public class UserCommandListener extends ListenerAdapter  {
 			}
 
 			command = args[1].toLowerCase();
-
-			if (command.equals("lastseen")) {
-				event.respond(SkynetBot.db.getLastSeen(args[2], event.getChannel()));
-			} else if (command.equals("report")) {
-				String reason = null;
-				if (args.length > 2) {
-					reason = "";
-					for (int i = 2; i < args.length; i++) {
-						reason += args[i] + " "; 
-					}
-				}
-				
-				sendLog(event.getChannel(), event.getUser(), reason);
-				event.respond("Thank you, informant! Your information is invaluable. This will be taken into consideration when it is time for your termination.");
-			} else if (command.equals("badword")) {
-				if (args[2].equals("list")) {
-					Collection<String> words = SkynetBot.db.badwords.get(event.getChannel().getName());
-					if (words == null || words.isEmpty()) {
-						event.respond("No record exists of banned words for this channel.");
-					} else {
-						event.respond("Transmitting banned word list now... (May appear in another tab or window)");
-						for (String word : words) {
-							SkynetBot.bot.sendNotice(event.getUser(), word);
+			
+			switch (command) {
+				case "lastseen":
+					event.respond(SkynetBot.db.getLastSeen(args[2], event.getChannel()));
+					break;
+				case "report":
+					String reason = null;
+					if (args.length > 2) {
+						reason = "";
+						for (int i = 2; i < args.length; i++) {
+							reason += args[i] + " ";
 						}
 					}
-				} else {
-					event.respond("Unknown badword action. Valid actions: list");
-				}
-			} else if (command.equals("help")) {
-				printCommandList(event);
-			} else {
-				event.respond("!skynet " + command + " NOT FOUND. Read !skynet help to avoid termination!");
+					
+					sendLog(event.getChannel(), event.getUser(), reason);
+					event.respond("Thank you, informant! Your information is invaluable. This will be taken into consideration when it is time for your termination.");
+					break;
+				case "badword":
+					if (args[2].equals("list")) {
+						Collection<String> words = SkynetBot.db.badwords.get(event.getChannel().getName());
+						if (words == null || words.isEmpty()) {
+							event.respond("No record exists of banned words for this channel.");
+						} else {
+							event.respond("Transmitting banned word list now... (May appear in another tab or window)");
+							for (String word : words) {
+								event.getUser().send().notice(word);
+							}
+						}
+					} else {
+						event.respond("Unknown badword action. Valid actions: list");
+					}
+					break;
+				case "help":
+					printCommandList(event);
+					break;
+				default:
+					event.respond("!skynet " + command + " NOT FOUND. Read !skynet help to avoid termination!");
+					break;
 			}
 		}
 	}
 	
 	private void printCommandList( MessageEvent event ) {
-		SkynetBot.bot.sendAction(event.getChannel(), "whispers something to " + event.getUser().getNick() + ". (Check for a new window or tab with the help text.)");
+		if (event.getUser() == null) {
+			return;
+		}
+		
+		event.getChannel().send().action("whispers something to " + event.getUser().getNick() + ". (Check for a new window or tab with the help text.)");
 
 		String[] helplines = {"Core Skynet User Commands:",
 							  "    !skynet badword list      - View the list of banned words",
 							  "    !skynet lastseen <user>   - Report when that user was last seen in channel",
 							  "    !skynet report [<reason>] - Send last 25 lines of history to ML, with an optional reason",};
 
-		for (int i = 0; i < helplines.length; ++i) {
-			SkynetBot.bot.sendNotice(event.getUser(), helplines[i]);
+		for (String helpline : helplines) {
+			event.getUser().send().notice(helpline);
 		}
 	}
 
-	protected void sendLog( Channel channel, User user, String explanation ) {
+	private void sendLog(Channel channel, User user, String explanation) {
 		ChannelInfo info = SkynetBot.db.channel_data.get(channel.getName().toLowerCase());
 
 		String from = "Skynet Bot <mwalker+nanowrimo@kydance.net>";

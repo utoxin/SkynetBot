@@ -29,40 +29,59 @@ import javax.mail.internet.MimeMessage;
 import org.pircbotx.Channel;
 import org.pircbotx.User;
 import org.pircbotx.hooks.ListenerAdapter;
-import org.pircbotx.hooks.events.ActionEvent;
-import org.pircbotx.hooks.events.InviteEvent;
-import org.pircbotx.hooks.events.JoinEvent;
-import org.pircbotx.hooks.events.MessageEvent;
+import org.pircbotx.hooks.events.*;
 
 /**
  *
  * @author Matthew Walker
  */
-public class ServerListener extends ListenerAdapter {
-	static protected HashMap<String, ArrayDeque<String>> channel_logs = new HashMap<String, ArrayDeque<String>>();
+class ServerListener extends ListenerAdapter {
+	static HashMap<String, ArrayDeque<String>> channel_logs = new HashMap<>();
 
 	@Override
+	public void onConnect(ConnectEvent event) {
+		String post_identify = SkynetBot.db.getSetting("post_identify");
+		if (!"".equals(post_identify)) {
+			event.respond(post_identify);
+		}
+	}
+	
+	@Override
 	public void onInvite( InviteEvent event ) {
-		if (!SkynetBot.db.channel_data.containsKey(event.getChannel())) {
-			SkynetBot.bot.joinChannel(event.getChannel());
-			SkynetBot.db.saveChannel(SkynetBot.bot.getChannel(event.getChannel()));
-			SkynetBot.bot.sendRawLineNow("CHANSERV ACCESS " + event.getChannel() + " ADD " + SkynetBot.bot.getNick() + " 5");
+		if (event.getUser() != null) {
+			SkynetBot.bot.sendIRC().joinChannel(event.getChannel());
 		}
 	}
 
 	@Override
 	public void onJoin( JoinEvent event ) {
-		if (!event.getUser().getNick().equals(SkynetBot.bot.getNick())) {
-			SkynetBot.db.updateUser(event.getUser(), event.getChannel());
+		if (event.getUser() != null && event.getUser().equals(SkynetBot.bot.getUserBot())) {
+			if (!SkynetBot.db.channel_data.containsKey(event.getChannel().getName().toLowerCase())) {
+				SkynetBot.db.saveChannel(event.getChannel());
+			}
 
-			if (SkynetBot.db.isUserBanned(event.getUser(), event.getChannel())) {
-				SkynetBot.bot.sendRawLine("CHANSERV KICK " + event.getChannel().getName() + " " + event.getUser().getNick() + " Exceeded the warning threshold.");
+			SkynetBot.bot.sendRaw().rawLineNow("CHANSERV ACCESS " + event.getChannel() + " ADD " + SkynetBot.bot.getNick() + " 5");
+		} else {
+			if (event.getUser() == null) {
+				return;
+			}
+
+			if (!event.getUser().getNick().equals(SkynetBot.bot.getNick())) {
+				SkynetBot.db.updateUser(event.getUser(), event.getChannel());
+
+				if (SkynetBot.db.isUserBanned(event.getUser(), event.getChannel())) {
+					SkynetBot.bot.sendRaw().rawLine("CHANSERV KICK " + event.getChannel().getName() + " " + event.getUser().getNick() + " Exceeded the warning threshold.");
+				}
 			}
 		}
 	}
 
 	@Override
 	public void onMessage( MessageEvent event ) {
+		if (event.getUser() == null) {
+			return;
+		}
+		
 		if (!event.getUser().getNick().equals(SkynetBot.bot.getNick())) {
 			SkynetBot.db.updateUser(event.getUser(), event.getChannel());
 		}
@@ -73,6 +92,10 @@ public class ServerListener extends ListenerAdapter {
 
 	@Override
 	public void onAction( ActionEvent event ) {
+		if (event.getUser() == null) {
+			return;
+		}
+
 		if (!event.getUser().getNick().equals(SkynetBot.bot.getNick())) {
 			SkynetBot.db.updateUser(event.getUser(), event.getChannel());
 		}
@@ -81,7 +104,7 @@ public class ServerListener extends ListenerAdapter {
 		checkMessage(event.getChannel(), event.getUser(), event.getMessage());
 	}
 
-	protected void checkMessage( Channel channel, User user, String message ) {
+	private void checkMessage(Channel channel, User user, String message) {
 		if (!user.getNick().equals("Timmy") && SkynetBot.db.badwords.get(channel.getName()) != null) {
 			if (SkynetBot.db.badwords.get(channel.getName()) != null) {
 				for (String word : SkynetBot.db.badwords.get(channel.getName())) {
@@ -96,7 +119,7 @@ public class ServerListener extends ListenerAdapter {
 		}
 	}
 
-	protected void handleViolation( Channel channel, User user, String word ) {
+	private void handleViolation(Channel channel, User user, String word) {
 		Date date = new Date();
 		ChannelInfo info = SkynetBot.db.channel_data.get(channel.getName());
 		boolean banned = false;
@@ -121,12 +144,12 @@ public class ServerListener extends ListenerAdapter {
 				banLength = (int) Math.pow(2, currentLevel);
 
 				String message = user.getNick() + ": You have exceeded the warning limit for violations! You have been banned for " + banLength + " hours. This incident has been reported to your local ML.";
-				SkynetBot.bot.sendMessage(channel, message);
+				channel.send().message(message);
 				updateLog(channel, SkynetBot.bot.getUserBot(), message, date.getTime());
-				SkynetBot.bot.sendRawLine("CHANSERV KICK " + channel.getName() + " " + user.getNick() + " Exceeded the warning threshold.");
+				SkynetBot.bot.sendRaw().rawLine("CHANSERV KICK " + channel.getName() + " " + user.getNick() + " Exceeded the warning threshold.");
 			} else {
 				String message = user.getNick() + ": WARNING! You have violated the policies of this channel! Please cease using the word '" + word + "' to avoid termination! You have " + warning_count + " warnings on file. 1 warning is removed every 24 hours you go without being warned again. 3 warnings results in a temporary ban from this channel. This incident has been reported to your local ML.";
-				SkynetBot.bot.sendMessage(channel, message);
+				channel.send().message(message);
 				updateLog(channel, SkynetBot.bot.getUserBot(), message, date.getTime());
 			}
 		} else if (info.control == ChannelInfo.ControlMode.OFF) {
@@ -135,14 +158,14 @@ public class ServerListener extends ListenerAdapter {
 
 		if (info.control == ChannelInfo.ControlMode.LOGONLY) {
 			String message = user.getNick() + ": WARNING! You have violated the policies of this channel! Please cease using the word '" + word + "' to avoid termination! This incident has been reported to your local ML.";
-			SkynetBot.bot.sendMessage(channel, message);
+			channel.send().message(message);
 			updateLog(channel, SkynetBot.bot.getUserBot(), message, date.getTime());
 		}
 		
 		sendLog(channel, user, word, banned, banLength);
 	}
 
-	protected void sendLog( Channel channel, User user, String word, boolean banned, int banLength ) {
+	private void sendLog(Channel channel, User user, String word, boolean banned, int banLength) {
 		ChannelInfo info = SkynetBot.db.channel_data.get(channel.getName());
 
 		String from = "Skynet Bot <mwalker+nanowrimo@kydance.net>";
@@ -191,13 +214,13 @@ public class ServerListener extends ListenerAdapter {
 		}
 	}
 	
-	public static void updateLog( Channel channel, User user, String message, double timestamp ) {
+	private static void updateLog(Channel channel, User user, String message, double timestamp) {
 		String timestampedMessage;
 		SimpleDateFormat dateFormatter = new SimpleDateFormat("HH:mm:ss");
 
 		ArrayDeque<String> log = channel_logs.get(channel.getName());
 		if (log == null) {
-			log = new ArrayDeque<String>();
+			log = new ArrayDeque<>();
 			channel_logs.put(channel.getName(), log);
 		}
 

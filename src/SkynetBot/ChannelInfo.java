@@ -19,28 +19,28 @@ import org.pircbotx.Channel;
  *
  * @author mwalker
  */
-public class ChannelInfo {
-	public Channel channel;
-	public ControlMode control;
-	public ArrayList<String> mls;
+class ChannelInfo {
+	Channel channel;
+	ControlMode control;
+	ArrayList<String> mls;
 
-	public enum ControlMode {
+	enum ControlMode {
 		AUTO, ALWAYS, OFF, LOGONLY
 	}
 
 	/**
 	 * Construct channel with default flags.
 	 *
-	 * @param name What is the name of the channel
+	 * @param channel What is the name of the channel
 	 */
-	public ChannelInfo( Channel channel ) {
+	ChannelInfo(Channel channel) {
 		this.channel = channel;
 		this.control = ControlMode.AUTO;
 
 		loadMLs();
 	}
 
-	public ChannelInfo( Channel channel, ControlMode mode ) {
+	ChannelInfo(Channel channel, ControlMode mode) {
 		this.channel = channel;
 		this.control = mode;
 
