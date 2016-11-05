@@ -1,0 +1,16 @@
+<component name="libraryTable">
+  <library name="net.snaq:dbpool:Release" type="repository">
+    <properties maven-id="net.snaq:dbpool:RELEASE" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/dbpool-7.0.1-jdk7.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/javaee-web-api-6.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/slf4j-api-1.7.21.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$PROJECT_DIR$/lib/dbpool-7.0.1-jdk7-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/lib/dbpool-7.0.1-jdk7-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

@@ -1,0 +1,15 @@
+<component name="libraryTable">
+  <library name="com.bluecatcode.time:joda-time-2.1-extended:1.1.0" type="repository">
+    <properties maven-id="com.bluecatcode.time:joda-time-2.1-extended:1.1.0" />
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/lib/joda-time-2.1-extended-1.1.0.jar!/" />
+      <root url="jar://$PROJECT_DIR$/lib/joda-time-2.1.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$PROJECT_DIR$/lib/joda-time-2.1-extended-1.1.0-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$PROJECT_DIR$/lib/joda-time-2.1-extended-1.1.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>
