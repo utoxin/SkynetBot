@@ -134,7 +134,7 @@ class AdminCommandListener extends ListenerAdapter {
 					event.respond("Data integrity verified. System active.");
 				} else if (userType == 1 && command.equals("shutdown")) {
 					event.respond("Shutting down...");
-					SkynetBot.bot.shutdown();
+					SkynetBot.shutdown();
 				} else if (command.equals("help")) {
 					printAdminCommandList(event);
 				} else {

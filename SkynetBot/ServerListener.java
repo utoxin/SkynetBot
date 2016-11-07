@@ -60,7 +60,7 @@ class ServerListener extends ListenerAdapter {
 				SkynetBot.db.saveChannel(event.getChannel());
 			}
 
-			SkynetBot.bot.sendRaw().rawLineNow("CHANSERV ACCESS " + event.getChannel() + " ADD " + SkynetBot.bot.getNick() + " 5");
+			SkynetBot.bot.sendRaw().rawLineNow("CHANSERV ACCESS " + event.getChannel().getName() + " ADD " + SkynetBot.bot.getNick() + " 5");
 		} else {
 			if (event.getUser() == null) {
 				return;
@@ -124,6 +124,10 @@ class ServerListener extends ListenerAdapter {
 		ChannelInfo info = SkynetBot.db.channel_data.get(channel.getName());
 		boolean banned = false;
 		int banLength = 0;
+
+		if (info.mls != null && info.mls.contains(user.getNick())) {
+			return;
+		}
 
 		if (info.control == ChannelInfo.ControlMode.AUTO) {
 			for (User check : channel.getUsers()) {

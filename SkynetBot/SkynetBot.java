@@ -26,9 +26,11 @@ import org.pircbotx.exception.IrcException;
  * @author Matthew Walker
  */
 public class SkynetBot {
-	static PircBotX bot;
 	static AppConfig config = AppConfig.getInstance();
-	static DBAccess db = DBAccess.getInstance();
+
+	public static PircBotX bot;
+	public static DBAccess db = DBAccess.getInstance();
+
 	private static SkynetBot instance;
 
 	/**
@@ -50,17 +52,39 @@ public class SkynetBot {
 				.setAutoNickChange(true)
 				.addListener(new ServerListener())
 				.addListener(new AdminCommandListener())
-				.addListener(new UserCommandListener());
+				.addListener(new UserCommandListener())
+				.setNickservDelayJoin(true);
 
 		db.refreshDbLists();
 		db.channel_data.entrySet().forEach((entry) -> configBuilder.addAutoJoinChannel(entry.getValue().channel));
 
 		bot = new PircBotX(configBuilder.buildConfiguration());
 
+		Runtime.getRuntime().addShutdownHook(new Thread() {
+			@Override
+			public void run() {
+				if (SkynetBot.bot.isConnected()) {
+					try {
+						SkynetBot.shutdown();
+						Thread.sleep(1000);
+					} catch (InterruptedException ex) {
+						Logger.getLogger(SkynetBot.class.getName()).log(Level.SEVERE, null, ex);
+					}
+				}
+			}
+		});
+
 		try {
 			bot.startBot();
 		} catch (IOException | IrcException ex) {
 			Logger.getLogger(SkynetBot.class.getName()).log(Level.SEVERE, null, ex);
+		}
+	}
+
+	static void shutdown() {
+		if (SkynetBot.bot.isConnected()) {
+			SkynetBot.bot.stopBotReconnect();
+			SkynetBot.bot.sendIRC().quitServer("I'll be back!");
 		}
 	}
 

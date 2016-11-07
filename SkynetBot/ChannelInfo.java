@@ -20,7 +20,7 @@ import org.pircbotx.Channel;
  * @author mwalker
  */
 class ChannelInfo {
-	Channel channel;
+	String channel;
 	ControlMode control;
 	ArrayList<String> mls;
 
@@ -30,24 +30,22 @@ class ChannelInfo {
 
 	/**
 	 * Construct channel with default flags.
-	 *
-	 * @param channel What is the name of the channel
 	 */
-	ChannelInfo(Channel channel) {
-		this.channel = channel;
+	ChannelInfo(String channel) {
+		this.channel = channel.toLowerCase();
 		this.control = ControlMode.AUTO;
 
 		loadMLs();
 	}
 
-	ChannelInfo(Channel channel, ControlMode mode) {
-		this.channel = channel;
+	ChannelInfo(String channel, ControlMode mode) {
+		this.channel = channel.toLowerCase();
 		this.control = mode;
 
 		loadMLs();
 	}
 
 	private void loadMLs() {
-		mls = (ArrayList<String>) SkynetBot.db.mls.get(this.channel.getName());
+		mls = (ArrayList<String>) SkynetBot.db.mls.get(this.channel.toLowerCase());
 	}
 }

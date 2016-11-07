@@ -12,9 +12,7 @@
  */
 package SkynetBot;
 
-import com.mysql.jdbc.Driver;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -56,19 +54,8 @@ class DBAccess {
 	}
 
 	private DBAccess() {
-		Class c;
-		Driver driver;
-		
-		try {
-			c = Class.forName("com.mysql.jdbc.Driver");
-			driver = (Driver) c.newInstance();
-			DriverManager.registerDriver(driver);
-		} catch (Exception ex) {
-			Logger.getLogger(DBAccess.class.getName()).log(Level.SEVERE, null, ex);
-		}
-
 		// Initialize the connection pool, to prevent SQL timeout issues
-		String url = "jdbc:mysql://" + SkynetBot.config.getString("sql_server") + ":3306/" + SkynetBot.config.getString("sql_database") + "?useUnicode=true&characterEncoding=UTF-8";
+		String url = "jdbc:mysql://" + SkynetBot.config.getString("sql_server") + ":3306/" + SkynetBot.config.getString("sql_database") + "?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC";
 		pool = new ConnectionPool("local", 5, 25, 50, 180000, url, SkynetBot.config.getString("sql_user"), SkynetBot.config.getString("sql_password"));
 		pool.setValidator(new Select1Validator());
 		pool.setAsyncDestroy(true);
@@ -246,7 +233,7 @@ class DBAccess {
 	private void getChannelList() {
 		Connection con;
 		ChannelInfo ci;
-		Channel channel;
+		String channel;
 		ChannelInfo.ControlMode control_mode;
 
 		this.channel_data.clear();
@@ -258,12 +245,11 @@ class DBAccess {
 			ResultSet rs = s.executeQuery("SELECT * FROM `channels`");
 
 			while (rs.next()) {
-				channel = SkynetBot.bot.getChannel(rs.getString("channel").toLowerCase());
+				channel = rs.getString("channel").toLowerCase();
 				control_mode = ChannelInfo.ControlMode.values()[rs.getInt("control_mode")];
 
 				ci = new ChannelInfo(channel, control_mode);
-
-				this.channel_data.put(channel.getName().toLowerCase(), ci);
+				this.channel_data.put(channel, ci);
 			}
 
 			con.close();
@@ -275,7 +261,7 @@ class DBAccess {
 	String getLastSeen(String user, Channel channel) {
 		Connection con;
 		String last = "No records found for a resistance member named " + user + ".";
-		DateTimeFormatter format = DateTimeFormat.forPattern("CCYY-MM-dd HH:mm:ss.S");
+		DateTimeFormatter format = DateTimeFormat.forPattern("CCYY-MM-dd HH:mm:ss");
 
 		try {
 			con = pool.getConnection(timeout);
@@ -288,7 +274,6 @@ class DBAccess {
 			ResultSet rs = s.getResultSet();
 			while (rs.next()) {
 				DateTime dateTime = format.parseDateTime(rs.getString("last_seen"));
-
 				Duration duration = new Duration(dateTime, new DateTime());
 
 				if (duration.getStandardMinutes() < 120) {
@@ -507,7 +492,7 @@ class DBAccess {
 			s.executeUpdate();
 
 			if (!this.channel_data.containsKey(channel.getName().toLowerCase())) {
-				ChannelInfo new_channel = new ChannelInfo(channel);
+				ChannelInfo new_channel = new ChannelInfo(channel.getName().toLowerCase());
 
 				this.channel_data.put(channel.getName().toLowerCase(), new_channel);
 			}

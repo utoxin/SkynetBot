@@ -1,15 +1,3 @@
-/**
- * This file is part of Skynet, the ChatNano Channel Management Bot.
- *
- * Skynet is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
- *
- * Skynet is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
- * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License along with Skynet. If not, see
- * <http://www.gnu.org/licenses/>.
- */
 package SkynetBot;
 
 import java.util.Collection;
@@ -21,7 +9,7 @@ import org.apache.commons.configuration.XMLConfiguration;
 public class AppConfig extends XMLConfiguration {
 	// Need this to make warnings shut up more.
 	private static final long serialVersionUID = -4534296896412602302L;
-	private static AppConfig instance;
+	private static final AppConfig instance;
 	private static final String configFile = "BotConfig.xml";
 
 	// Singleton initialiser
@@ -61,7 +49,7 @@ public class AppConfig extends XMLConfiguration {
 		return instance;
 	}
 
-	public static void main( String args[] ) {
+	public void main( String args[] ) {
 		AppConfig config = AppConfig.getInstance();
 		System.out.println(config.getString("database.user-name"));
 		System.out.println(config.getString("database.password"));
